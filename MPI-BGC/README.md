@@ -7,7 +7,7 @@
     - Monthly ESA-CCI MODISv5.1 burned area data. Data available from **2001 to 2020** year. To use this data you have to use parameter `burned_area_year` and dataset name `BA_MODIS` in *get_path_in* function. I used this data for preparing intial data for running OCN model;
     - Monthly ESA-CCI MODISv5.1 burned area data for natural PFT re-interpolated to OCN grid (`360*720`). Natural means that all *cropts PFTs* were deleted from the data. Data available from **2001 to 2020** year. To use this data you have to use parameter `burned_area_post` and dataset name `BA_MODIS` in *get_path_in* function. Data were calculated based on Monthly ESA-CCI MODISv5.1 values.
 
-<p style="text-align: center"><img src="https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/ADDITIONAL_MATERIALS/ESA_CCI_MODIS_example.jpg"></p>
+<p style="text-align: center"><img src="https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/ADDITIONAL_MATERIALS/ESA_CCI_MODIS_example.jpg"></p>
 
 **Figure 1.** Total burned area for the year 2019. Figure copied from the official dataset documentation ([Chuvieco, E., et al., 2019][1])
 
@@ -15,7 +15,7 @@
     - Annual ESA-CCI L4 AVHRR-LTDR burned area data. Data available from **1982 to 2018** year. To use this data you have to use parameter `burned_area` and dataset name `BA_AVHRR` in *get_path_in* function;
     - Annual LTDR LAI data.  Data available from **1981 to 2020** year. To use this data you have to use parameter `lai` and dataset name `LAI_LTDR` in *get_path_in* function.
 
-<p style="text-align: center"><img src="https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/ADDITIONAL_MATERIALS/AVHRR_example.jpg"></p>
+<p style="text-align: center"><img src="https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/ADDITIONAL_MATERIALS/AVHRR_example.jpg"></p>
 
 **Figure 2.** Annual FireCCILT11 BA (at 0.25° resolution) for 2016 year. Figure copied from the official dataset publication ([Gonzalo, O., et al., 2021][2b])
 
@@ -23,7 +23,7 @@
     - Annual GFED4.1s burned area data. Data available from **1997 to 2017** year. To use this data you have to use parameter `burned_area` and dataset name `GFED4.1s` in *get_path_in* function;
     - Annual GFED4.1s carbon emission data. Data available from **1997 to 2017** year. To use this data you have to use parameter `fFire` and dataset name `GFED4.1s` in *get_path_in* function.
 
-<p style="text-align: center"><img src="https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/ADDITIONAL_MATERIALS/GFED4.1s_example.jpg"></p>
+<p style="text-align: center"><img src="https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/ADDITIONAL_MATERIALS/GFED4.1s_example.jpg"></p>
 
 **Figure 3.** Annual burned area, averaged over 1997-2014. Figure copied from the official dataset ([web-page][3])
 
@@ -35,7 +35,7 @@
     - Annual GFED fire-related forest loss carbon emissions from aboveground data. Data available from **2002 to 2020** year. To use this data you have to use parameter `fFire` and dataset name `GFED_AG_FL` in *get_path_in* function;
     - Annual GFED fire-related forest loss carbon emissions from belowground data. Data available from **2002 to 2020** year. To use this data you have to use parameter `fFire` and dataset name `GFED_BG_FL` in *get_path_in* function.
 
-<p style="text-align: center"><img src="https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/ADDITIONAL_MATERIALS/GFED_example.jpg"></p>
+<p style="text-align: center"><img src="https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/ADDITIONAL_MATERIALS/GFED_example.jpg"></p>
 
 **Figure 4.** Global annual burned area, averaged over 2002-2020. Figure copied from the official dataset publication ([D. van Wees et al., 2022][4])
 
@@ -67,7 +67,7 @@
     - ***OCN_S2Prog_v3*** -> OCN simulation prepared based on OCN model version - *v2023_02*;
     - ***OCN_S2Diag_v3*** -> OCN simulation prepared based on OCN model version - *v2023_02*;
 
-<p style="text-align: center"><img src="https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/ADDITIONAL_MATERIALS/OCN_simulations.jpg"></p>
+<p style="text-align: center"><img src="https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/ADDITIONAL_MATERIALS/OCN_simulations.jpg"></p>
 
 **Figure 4.** Description OCN simulations
 
