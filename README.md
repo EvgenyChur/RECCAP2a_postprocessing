@@ -6,7 +6,9 @@ DGVMs have limited ability to simulate spatial-temporal patterns of fire emissio
 
 More information about RECCAP2 project is available in [the protocol][link1] and an [official web-page][link2] of the project.
 
-![fig](https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/ADDITIONAL_MATERIALS/RESULTS.jpg)
+![fig](https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/ADDITIONAL_MATERIALS/RESULTS.jpg)
+
+**Figure 1:** Comparison output model results before (S2Diag) and after updating (S2Prog) models, based on: a) burned area fraction, b) fire emissions.
 
 ## Content of RECCAP2A project:
 Project has 2 main folders:
@@ -27,14 +29,14 @@ Each subfolder has an additional readme.md file with more detailed information.
 
 
 ## Cloning RECCAP2A processing scripts:
-In order to use/develop RECCAP2A processing scripts repository should be cloned. To clone from gitlab, you need to [provide a valid public key][1] or use HTTPS connection. In the latter case, you have to write your login and password everytime when you want to do something with gitlab server. More information is available on the official gitlab web-page ([how to use SSH keys to communicate with Gitlab][2]):
+In order to use/develop RECCAP2A processing scripts repository should be cloned. To clone from gitlab, you need to provide a valid public key or use HTTPS connection. In the latter case, you have to write your login and password everytime when you want to do something with gitlab server. More information is available on the official gitlab web-page ([how to use SSH keys to communicate with Github][2]):
 
 If you want to continue developing of *RECCAP2A* processing scripts you have to do the next things:
 1. Open the web version of *RECCAP2A* project and create `a new issue` with the name of your research or task. Name should gives other users the key aspect of your work;
-2. From your new issue, you have to create a new branch with the name **/feature/{direction_of_your_updates}**. You have to use a branch `Version_10112022` as a source branch;
+2. From your new issue, you have to create a new branch with the name **/feature/{direction_of_your_updates}**. You have to use a branch `main` as a source branch;
 3. At the moment, your new branch is a full copy of the main branch and you can clone it to your "local" computer:
 ```
-git clone --branch /feature/{direction_of_your_updates} git@git.bgc-jena.mpg.de:abastos/esa-cci-reccap2a.git reccap2a_scripts
+git clone --branch /feature/{direction_of_your_updates} git@github.com:EvgenyChur/RECCAP2a_postprocessing.git reccap2a_scripts
 cd reccap2a_scripts
 git status
 ```
@@ -79,8 +81,7 @@ Don't forget to get access to MPI-BGC Discourse.
 [link1]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/blob/Version_19082022/REPORTS/RECCAP2-A_Protocol.docx
 [link2]: https://climate.esa.int/en/projects/reccap-2/
 
-[1]: https://git.bgc-jena.mpg.de/-/profile/keys
-[2]: https://docs.gitlab.com/ee/user/ssh.html
+[2]: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 [3]: https://bgc.discourse.mpg.de/t/git-usage-tutorial/40
 [4]: https://bgc.discourse.mpg.de/t/git-usage-tutorial-discussion/3049
 [5]: https://bgc.discourse.mpg.de/t/using-github-on-cluster-development-nodes/3711
