@@ -11,9 +11,9 @@ The folder `calc` has 3 scripts for solving auxiliary tasks:
     |:------------:|:-------------:|:-----------:|
     | ![][fig1a]   | ![][fig1b]    | ![][fig1c]  |
 
-    [fig1a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/STATIONS.png
-    [fig1b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/burned_area_station_AST1.png
-    [fig1c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/boxplot_burned_area_station_AST1.png
+    [fig1a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/STATIONS.png
+    [fig1b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/burned_area_station_AST1.png
+    [fig1c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/boxplot_burned_area_station_AST1.png
 
 2. `stat_controls.py` - Module for statistical analysis of data presented on model grid. Module has next functions:
     - ***timmean*** -> calculating time mean values;
@@ -36,12 +36,12 @@ The folder `calc` has 3 scripts for solving auxiliary tasks:
     |:---------------:|:----------:|:-----------:|:--------------:|:--------------:|:---------:|
     | ![][fig2a]      | ![][fig2b] | ![][fig2c]  | ![][fig2d]     | ![][fig2e]     | ![][fig2f]|
 
-    [fig2a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/burned_area_station_KAZ.png
-    [fig2b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/boxplot_burned_area_station_KAZ.png
-    [fig2c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4MODIS.png
-    [fig2d]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/Collage_BA_Global.png
-    [fig2e]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/Global_MEAN4BA_vis.png
-    [fig2f]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/VIS_CONTROL/PFT_evgreen.png
+    [fig2a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/burned_area_station_KAZ.png
+    [fig2b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/boxplot_burned_area_station_KAZ.png
+    [fig2c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4MODIS.png
+    [fig2d]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/Collage_BA_Global.png
+    [fig2e]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/Global_MEAN4BA_vis.png
+    [fig2f]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/VIS_CONTROL/PFT_evgreen.png
 
 ## How to set scripts?
 1. **one_point.py** --> you don't need to change this module. Nevertheless, if you want to change plot settings you have to change several parameters:

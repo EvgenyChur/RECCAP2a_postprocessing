@@ -13,9 +13,9 @@ This folder has personal scripts for postprocessing model and satellite data:
     |:------------:|:-------------:|:-----------:|
     | ![][fig1a]   | ![][fig1b]    | ![][fig1c]  |
 
-    [fig1a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/ESA_PFT/Global_MEAN4BA_vis.png
-    [fig1b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/ESA_PFT/Global_STD4BA_vis.png
-    [fig1c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/ESA_PFT/Global_TREND4BA_vis.png
+    [fig1a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/ESA_PFT/Global_MEAN4BA_vis.png
+    [fig1b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/ESA_PFT/Global_STD4BA_vis.png
+    [fig1c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/ESA_PFT/Global_TREND4BA_vis.png
 
 2. `ba_esa_ocn.py` - script for calculating statistical parameters (MEAN, STD, TIME TREND) based on *OCN* data and visualizing them as collage plots.
 
@@ -25,9 +25,9 @@ This folder has personal scripts for postprocessing model and satellite data:
     |:------------:|:-------------:|:-----------:|
     | ![][fig2a]   | ![][fig2b]    | ![][fig2c]  |
 
-    [fig2a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/OCN_PFT/Global_MEAN4BA_vis.png
-    [fig2b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/OCN_PFT/Global_STD4BA_vis.png
-    [fig2c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/OCN_PFT/Global_TREND4BA_vis.png
+    [fig2a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/OCN_PFT/Global_MEAN4BA_vis.png
+    [fig2b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/OCN_PFT/Global_STD4BA_vis.png
+    [fig2c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/OCN_PFT/Global_TREND4BA_vis.png
 
 3. `check_ESA_tbaf.py` - script for calculating differences between natural total annual burned area fraction (tbaf) calculated based on *ESA-CCI MODIS* data and total annual land cover fraction (tland) calculated based on *OCN* natural PFT. Script has several subfunctions:
     - ***get_data*** -> the local function for reading NetCDF data;
@@ -38,12 +38,12 @@ This folder has personal scripts for postprocessing model and satellite data:
     |:------------:|:--------------:|:-----------------:|:------------:|:-----------------------:|:---------------------:|
     | ![][fig3a]   | ![][fig3b]     | ![][fig3c]        | ![][fig3d]   | ![][fig3e]              | ![][fig3f]            |
 
-    [fig3a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_TBAF/lfrac_all_PFT.png
-    [fig3b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_TBAF/lfrac_nat_PFT.png
-    [fig3c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_TBAF/lfrac_diff.png
-    [fig3d]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_TBAF/monthly_fdiff_2011.png
-    [fig3e]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_TBAF/annual_fdiff_2011.png
-    [fig3f]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_TBAF/bad_points.png
+    [fig3a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_TBAF/lfrac_all_PFT.png
+    [fig3b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_TBAF/lfrac_nat_PFT.png
+    [fig3c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_TBAF/lfrac_diff.png
+    [fig3d]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_TBAF/monthly_fdiff_2011.png
+    [fig3e]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_TBAF/annual_fdiff_2011.png
+    [fig3f]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_TBAF/bad_points.png
 
 4. `check_ocn_pft.py` - create burned area comparison plots for *OCN* and *ESA-CCI MODIS* PFT devided on different groups based on vegetation types. Script has several subfunctions:
     - ***read_data*** -> Reading burned area actual datasets (model simulations) and converting them into OCN grid (720x300);
@@ -55,10 +55,10 @@ This folder has personal scripts for postprocessing model and satellite data:
     |:------------:|:--------------:|:-----------------:|:------------:|
     | ![][fig4a]   | ![][fig4b]     | ![][fig4c]        | ![][fig4d]   |
 
-    [fig4a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/PFT_COMP/PFT_crops.png
-    [fig4b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/PFT_COMP/PFT_grass.png
-    [fig4c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/PFT_COMP/PFT_evgreen.png
-    [fig4d]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/PFT_COMP/PFT_decid.png
+    [fig4a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/PFT_COMP/PFT_crops.png
+    [fig4b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/PFT_COMP/PFT_grass.png
+    [fig4c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/PFT_COMP/PFT_evgreen.png
+    [fig4d]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/PFT_COMP/PFT_decid.png
 
 5. `fire_ratio.py` - script for creating a collage with the carbon ration (fFire / burned Area);
 
@@ -66,9 +66,9 @@ This folder has personal scripts for postprocessing model and satellite data:
     |:----------:|:----------:|:-------------:|
     | ![][fig5a] | ![][fig5b] | ![][fig5c]    |
 
-    [fig5a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/FIRE_RATIO/ba_coef_Europe.png
-    [fig5b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/FIRE_RATIO/ffire_coef_Europe.png
-    [fig5c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/FIRE_RATIO/carbon_ration_Europe.png
+    [fig5a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/FIRE_RATIO/ba_coef_Europe.png
+    [fig5b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/FIRE_RATIO/ffire_coef_Europe.png
+    [fig5c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/FIRE_RATIO/carbon_ration_Europe.png
 
 6. `fire_xarray.py` - main script for postprocessing of models (OCN, JULES, ORCHIDEE) and satellite information.
 
@@ -78,10 +78,10 @@ This folder has personal scripts for postprocessing model and satellite data:
     |:-------------:|:--------------:|:------------:|:--------------------:|
     | ![][fig6a]    | ![][fig6b]     | ![][fig6c]   | ![][fig6d]           |
 
-    [fig6a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/FIRE_XARRAY/BA_Global.png
-    [fig6b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/FIRE_XARRAY/boxplot_burned_area_station_KAZ.png
-    [fig6c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/FIRE_XARRAY/Collage_BA_Global.png
-    [fig6d]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/FIRE_XARRAY/Diff_BA_BA_MODIS_OCN_S2Diag_v3_Global.png
+    [fig6a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/FIRE_XARRAY/BA_Global.png
+    [fig6b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/FIRE_XARRAY/boxplot_burned_area_station_KAZ.png
+    [fig6c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/FIRE_XARRAY/Collage_BA_Global.png
+    [fig6d]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/FIRE_XARRAY/Diff_BA_BA_MODIS_OCN_S2Diag_v3_Global.png
 
 7. `landcover.py` - script for processing of landcover fraction by PFT:
     1. Calculating and visualisation of burned area difference (GFED - OCN) by PFT
@@ -93,10 +93,10 @@ This folder has personal scripts for postprocessing model and satellite data:
     |:-------------:|:--------------:|:---------------------------------:|:-----------------------------------:|
     | ![][fig7a]    | ![][fig7b]     | ![][fig7c]                        | ![][fig7d]                          |
 
-    [fig7a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_BA_by_PFT/PFT_in_OCN_S2Prog.png
-    [fig7b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_BA_by_PFT/PFT_in_OCN_S2Prog.png
-    [fig7c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_BA_by_PFT/BA_DIFF_OCN_S2Prog_BA_MODIS.png
-    [fig7d]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/MAIN/DIFF_BA_by_PFT/BA_DIFF_OCN_S2Diag_BA_MODIS.png
+    [fig7a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_BA_by_PFT/PFT_in_OCN_S2Prog.png
+    [fig7b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_BA_by_PFT/PFT_in_OCN_S2Prog.png
+    [fig7c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_BA_by_PFT/BA_DIFF_OCN_S2Prog_BA_MODIS.png
+    [fig7d]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/MAIN/DIFF_BA_by_PFT/BA_DIFF_OCN_S2Diag_BA_MODIS.png
 
 8. `mpost4burn_area.py` - script for post-processing of *OCN* and *ESA-CCI MODISv5.0*. In case of OCN model, script uses model output *OCN_{name}_firepft.nc* created based on modernized script ***[create_trendy_output_fire.sh][1]*** and calculate total burned area values over all natural PFT. Otherwise, script uses original *ESA-CCI MODISv5.0*, select natural PFT, and calculate total values. You have to use this script before `fire_xarray.py` or `run_ocn_postprocessing.sh`.
 

@@ -6,7 +6,7 @@ Scripts from this folder has several purposes:
 * test OCN algorithms based on equations and check which potential values can be calculated in them;
 
 1. `2dmap4sites.py` - create a global map as a Basemap object with information about random station location. Information about stations comes from `station` dictionary **/settings/user_settings.py**. More complicated option of this script (***vis_stations***) has been implemented into `libraries/lib4visualization.py` and the controlling function is located in `calc/one_point.py`.
-![result_1](https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/2D_MAP/STATIONS.png)
+![result_1](https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/2D_MAP/STATIONS.png)
 
 2. `ctr_alg4ocn.py` - script for testing mathematical algorithm for calculation of burned area fraction based on ESA-CCI initial data. This algorithm has been implemented into ***OCN*** model, subrotine ***LPJ_fire***. The main idea is input total burned area fraction values of ESA-CCI MODISv5.0 should be the same before and after calculation of OCN model. We can get this result if we use scalling coefficients calculated based on different plant functional types and fire resistance coefficients. This script can you understanding how the new OCN algorithm for burned area works. Script uses the raw output results of OCN model, which were printed in OCN model log and copied as numpy arrays in `tests/ocn_data4ctr_alg.py`.
 
@@ -30,12 +30,12 @@ After updates, I had a problem that input and output `ESA-CCI MODIS v5.0` data w
 |:------------------------:|:-----------:|:------------------:|
 |      ![][fig6a]          | ![][fig6b]  |  ![][fig6c]        |
 
-[fig6_1]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/FAST_TEST/BA.png
-[fig6_2]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/FAST_TEST/BA_PFT.png
-[fig6_3]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/FAST_TEST/BA2BA_PFT.png
-[fig6a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4MODIS.png
-[fig6b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4OCN.png
-[fig6c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4DIFF.png
+[fig6_1]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/FAST_TEST/BA.png
+[fig6_2]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/FAST_TEST/BA_PFT.png
+[fig6_3]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/FAST_TEST/BA2BA_PFT.png
+[fig6a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4MODIS.png
+[fig6b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4OCN.png
+[fig6c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/FAST_TEST/2D_map4DIFF.png
 
 7. `ffire_test.py`- script for comparing GFED4.1s fFire data presented on different grids (original - `720*1440` and OCN `360*720`);
 
@@ -43,19 +43,19 @@ After updates, I had a problem that input and output `ESA-CCI MODIS v5.0` data w
 |:----------------------:|:-------------------------:|:------------------------:|
 |      ![][fig1]         |       ![][fig2]           |        ![][fig3]         |
 
-[fig1]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/fFIRE_TEST/annual_fFire.png
-[fig2]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/fFIRE_TEST/fFire_720_1440.png
-[fig3]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/fFIRE_TEST/fFire_360_720.png
+[fig1]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/fFIRE_TEST/annual_fFire.png
+[fig2]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/fFIRE_TEST/fFire_720_1440.png
+[fig3]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/fFIRE_TEST/fFire_360_720.png
 
 8.  `GFED2.py` - script for testing the new generation of GFED2 data. Simple script for reading NetCDF data and analysis of it's attributes, time units and ets.
 
 9. `rand_ts4s0.py` - script for creating random timeseries ***s0_sequence.txt***. The file is required for running OCN model (mixing years for SPINUP);
 
 10. `lpjFire_coef.py` - a simple test of coefficient values used in `lpjFire.f90` module of **OCN** model. OCN values are different from the original paper. Because of that this test was created.
-![result_10](https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/LPG_COEF/lpj_fire_coef.png)
+![result_10](https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/LPG_COEF/lpj_fire_coef.png)
 
 11. `OCN_param.py` - a script with the simplified version of the calculation algorithm implemented in `/main/fire_xarray.py`. You can use it only for one research parameter. Can be usefull, if you want to add new datasets for analysis.
-![result_11](https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/TESTS/FIGURES/OCN_PARAM/BA_Global.png)
+![result_11](https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/TESTS/FIGURES/OCN_PARAM/BA_Global.png)
 
 12. `test_jules.py` - script for testing *JULES output model* results. More complicated version of thealgorithm have been implemented into the `main` postprocessing scripts.
 

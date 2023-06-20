@@ -15,9 +15,9 @@ The main results of this group of scripts are the yearly NetCDF files (***lfire_
 |:-----------------------------:|:----------------------------:|:----------:|
 | ![][fig1a]                    | ![][fig1b]                   | ![][fig1c] |
 
-[fig1a]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/PREPROCESS/PREP_ESA/baf_esa025_2001.png
-[fig1b]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/PREPROCESS/PREP_ESA/baf_esa05_2001.png
-[fig1c]: https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/PREPROCESS/PREP_ESA/fire_com.png
+[fig1a]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/PREPROCESS/PREP_ESA/baf_esa025_2001.png
+[fig1b]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/PREPROCESS/PREP_ESA/baf_esa05_2001.png
+[fig1c]: https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/PREPROCESS/PREP_ESA/fire_com.png
 
 2. **Group 2. Preprocessing GFED data:**
 
@@ -37,7 +37,7 @@ This group was created for preprocessing of LAI data based on different datasets
 - `prep_LAI.py` -> main preprocessing script;
 - `yearmean_lai.py` -> auxiliary script for LTDR dataset.
 
-![result_3](https://git.bgc-jena.mpg.de/abastos/esa-cci-reccap2a/-/raw/Version_10112022/RESULTS/PREPROCESS/collage_lai_diff.png)
+![result_3](https://github.com/EvgenyChur/RECCAP2a_postprocessing/blob/main/RESULTS/PREPROCESS/collage_lai_diff.png)
 
 ## How to set and use scripts:
 1. **Group 1: Preprocessing of ESA-CCI MODIS v5.0 data:**
