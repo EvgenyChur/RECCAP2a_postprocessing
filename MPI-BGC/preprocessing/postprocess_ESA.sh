@@ -32,7 +32,7 @@ ycount=19
 name_out="ba_fraction" # ESA-CCI filename
 
 #=============================== Paths =========================================
-# These paths were changed because of security reasons:
+# -- These parameters should be adapted by users:
 DIR=../scratch/evchur/ESA_DATA/FIRE/DATA_PFT
 DIR_FIRE=../work_1/RECCAP2/RECCAP_ESACCI/OCNForcing/FIRE
 #============================= Main part =======================================

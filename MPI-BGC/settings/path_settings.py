@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+__all__ = [
+    'get_path_in',
+    'get_parameters',
+    'get_output_path',
+]
 """
 Get actual paths and parameters for the research datasets and OCN simulations.
 
@@ -20,34 +25,39 @@ Version    Date       Name
            changed - machine to lcluster, changed functions input parameteres
     1.4    2023-05-08 Evgenii Churiulin, MPI-BGC
            Code refactoring
+    1.5    2023-09-11 Evgenii Churiulin, MPI-BGC
+           Updated functions according to the changes in user settings. Function
+           output_path was renamed to get_output_path. Added parameters for packedge
+           import
 """
 # =============================     Import modules     ===================
 import os
 import sys
 import xarray as xr
-sys.path.append(os.path.join(os.getcwd(), '..'))
+import pprint
 
-from settings import mlocal_set
-from settings import mcluster_set
-from settings.user_settings import logical_settings
+import mlocal_set
+import mcluster_set
+from user_settings import logical_settings
+
 # ========================   Personal functions   ========================
+
 # 1. get_path_in -> Get actual input path for input models (OCN, JULES, ORCHIDEE)
 #                   or satellite datasets
 def get_path_in(
         # Input variables:
         lst4dts:list[str],             # Research datasets (just names)
         var:str,                       # Research parameter (burned_area, gpp, npp ant ets.)
+        lsettings:dict,                # User logical settings
         # OUTPUT variables:
     ) -> tuple[list[str],              # Input data paths (absolute path)
                list[str]]:             # NetCDF attribute names of the research datasets
-
-    # -- Local parameters 
-    ocn_id      = 'OCN'
-    jules_id    = 'JUL'
-    orchidee_id = 'ORC'
+    #print(lst4dts)
+    # -- Local parameters:
+    ocn_id, jules_id, orchidee_id = 'OCN', 'JUL', 'ORC'
 
     # -- Define settings for local or cluster computer
-    if logical_settings[0] is True:
+    if lsettings.get('lcluster'):
         # -- Satellite and model datasets different from OCN, JULES, ORCHIDEE
         dts_cat          = mcluster_set.datasets_catalog()
         # OCN data
@@ -57,10 +67,10 @@ def get_path_in(
         # -- ORCHIDEE data
         orc_cat, orc_atb = mcluster_set.orchidee_catalog(var)
     else:
-        dts_cat          = mlocal_set.datasets_catalog()
-        ocn_cat, ocn_atb = mlocal_set.ocn_catalog(var)
-        jul_cat, jul_atb = mlocal_set.jules_catalog(var)
-        orc_cat, orc_atb = mlocal_set.orchidee_catalog(var)
+        dts_cat          = mlocal_set.loc_datasets_catalog()
+        ocn_cat, ocn_atb = mlocal_set.loc_ocn_catalog(var)
+        jul_cat, jul_atb = mlocal_set.loc_jules_catalog(var)
+        orc_cat, orc_atb = mlocal_set.loc_orchidee_catalog(var)
 
     # 2. Get actual data paths
     catalog   = []
@@ -88,28 +98,23 @@ def get_path_in(
         # -- Create paths and attributes lists 
         catalog.append(fpath)
         res_param.append(nc_atb)
-
     return catalog, res_param
-# ----------------------------------------------------------------------
 
-# 2. get_parameters -->  Get correct data names (short and full) and units for
-#                        using this information as a source of data for linear,
-#                        2D, 3D and collage plots.
+
 def get_parameters(
         # Input variables:
         lst4dts:list[str],                  # Research datasets (just names)
         var:str,                            # Research parameter (burned_area, gpp, npp ant ets.)
+        lsettings:dict,                     # User logical settings
         # OUTPUT variables:
     ) -> tuple[str,                         # Short name of the research parameter (s_name)
                str,                         # Full name of the research parameter (l_name)
                str,                         # Units for 2D plot
                str]:                        # Units for 3D plot (units can be different)
-
+    """Get correct data names (short and full) and units for using this
+    information as a source of data for linear, 2D, 3D and collage plots. """
     # -- Define actual parameters for simulations and datasets:
-    if logical_settings[0] is True:
-        var_units = mcluster_set.dataset_units()
-    else:
-        var_units = mlocal_set.dataset_units()
+    var_units = mcluster_set.dataset_units() if lsettings.get('lcluster') else mlocal_set.loc_dataset_units()
 
     # -- Get actual parameters for datasets:
     for item in var_units:                                   # cycle by dictionary elements
@@ -121,51 +126,38 @@ def get_parameters(
             unit_3d = item['units4collage'] 
     
     return s_name, l_name, unit_2d, unit_3d
-# ----------------------------------------------------------------------
 
-# 3. output_path --> Get output path for calculation results
-def output_path():
-    # -- Define actual parameters for simulations and datasets
-    if logical_settings[0] is True:
-        pouts = mcluster_set.output_folders()
-    else:
-        pouts = mlocal_set.output_folders()
-    return pouts
-# ----------------------------------------------------------------------
+
+# 3. Get output path for calculation results:
+def get_output_path(lsettings:dict) -> dict:
+    """Define actual parameters for simulations and datasets:"""
+    return (
+        mcluster_set.output_folders() if lsettings.get('lcluster') else mlocal_set.loc_output_folders()
+    )
 
 if __name__ == '__main__':
     # =============================   User settings   ==================
 
-    # Define actual datasets  
-                              # Potential options                
-    #lst4dts = ['OCN_S2Diag'] # OCN + ['LAI_LTDR', 'LAI_MODIS', 'GLOBMAP']          # LAI
-                              # OCN + ['BA_MODIS', 'BA_AVHRR', 'GFED4.1s', 'JULES'] # Burned area
-                              # OCN + ['GFED4.1s']                                  # fFire
+    # -- Define actual datasets (Potential options):
+    lst4dts = ['OCN_Spost_v4', 'OCN_S0_v4', 'OCN_S2Prog_v4', 'OCN_S2Diag_v4']
+    # -- Define the main focus of data for analysis:
+    var = 'burned_area' # 'lai', 'fFire', 'gpp'
+    # -- Define logical settings:
+    lsets = logical_settings(lcluster = True)
 
-    #lst4dts = ['JULES']
-    #lst4dts = ['BA_MODIS']
-    lst4dts = ['OCN_S2Diag']
-    #lst4dts = ['GFED_TOT', 'GFED_FL', 'OCN_S2Diag']
-    #lst4dts = ['MOD17A2HGFv061'] # gpp
-    #lst4dts = ['GFED_AG_TOT', 'GFED_BG_TOT'] # ffire
-    
-    # Define the main focus of data for analysis
-    var     = 'burned_area' # 'lai', 'fFire', 'gpp' ....
-    
     # =============================    Main program   ==================
     # -- Get INPUT paths:
-    path_IN, res_param = get_path_in(lst4dts, var)
-    print('Actual input paths:', path_IN)
-    print('Actual parameters:',res_param )
-
+    pin, res_param = get_path_in(lst4dts, var, lsets)
     # -- Get list of actual parameters:
-    s_var_name, var_name, lplot_units, cplot_units = get_parameters(
-        lst4dts, var)
-
+    s_var_name, var_name, lplot_units, cplot_units = get_parameters(lst4dts, var, lsets)
     # -- Get list of output paths:
-    out = output_path()
+    pout = get_output_path(lsets)
 
+    print('Actual input paths:', pin, '\n')
+    print('Actual parameters:' , res_param, '\n')
+    print('Actual output path:', pout, '\n')
     # -- Open file (test mode):
-    for pin in path_IN:
-        nc  = xr.open_dataset(pin, decode_times = False)
+    for path in pin:
+        print(f'Data reading test. Actual dataset is {path}')
+        nc = xr.open_dataset(path, decode_times = False)
     # =============================    END program   ===================

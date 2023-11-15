@@ -39,7 +39,7 @@ hcount=28 # hindex
 vcount=12 # vindex
 # -- URL with GFED data:
 url="https://zenodo.org/record/7229675/files"
-# -- Output paths (path was changed because of security reasons):
+# -- Output paths:
 bOUT="../people/evchur/GFED_2002-2020"
 # ============================= Main part ===========================
 

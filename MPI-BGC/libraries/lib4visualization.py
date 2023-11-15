@@ -1,5 +1,25 @@
 # -*- coding: utf-8 -*-
-
+__all__ = [
+    'line_plots',
+    'netcdf_line_plots',
+    'plots5_stomata',
+    'create_lplot_with_2axis',
+    'tick_rotation_size',
+    'line_plot_settings',
+    'simple_line_plot_settings',
+    'hist_settings',
+    'plot_diff_hist',
+    'TaylorDiagram',
+    'select_domain',
+    'vis_stations',
+    'netcdf_grid',
+    'netcdf_grid_series',
+    'create_fast_xarray_plot',
+    'get_params',
+    'vis_stat_mode',
+    'get_data_m',
+    'plot_waves',
+]
 """
 Module with functions for visualization:
 
@@ -90,7 +110,7 @@ import warnings
 warnings.filterwarnings("ignore")
 # Import personal module
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings import user_settings as uset
+from settings import config, get_settings4stations
 
 # =============================   User settings   ========================
 # -- Additional parameters for X and Y axis for plots
@@ -337,7 +357,8 @@ def line_plot_settings(
                 'lplots_stomata2': [   16,    20,     0,        'black' ],
                 'modis_plots'    : [   14,    20,    15,        'black' ],
                 'lplot'          : [   14,    20,    15,        'black' ],
-                'netcdf_lplot'   : [   14,    20,     0,        'black' ]}
+                'netcdf_lplot'   : [   14,    20,     0,        'black' ],
+                'RECCAP2'        : [   14,    20,    90,        'black' ], }
     
     fsize    = settings.get(version)[0]
     lpab     = settings.get(version)[1]
@@ -353,11 +374,12 @@ def line_plot_settings(
     ax.set_ylabel(    y_label, color = clr, fontsize = fsize, labelpad = lpab)
 
     # -- Legend parameters
-    font = font_manager.FontProperties(family = 'Arial', style = 'normal', size = fsize)
+    #font = font_manager.FontProperties(family = 'Arial', style = 'normal', size = fsize)
 
     if llegend == True:
         #ax.legend(loc = leg_pos, frameon = True, prop = font, bbox_to_anchor=(0.5, -0.05),)
-        ax.legend(loc=leg_pos,  ncol=1,prop = font, frameon = True,)
+        ax.legend(loc=leg_pos,  ncol=4,  frameon = True )#bbox_to_anchor=(0.5, -0.05)) prop = font,
+        #ax.legend(loc=leg_pos,  ncol=1,prop = font, frameon = True,)
 
     # -- Get x ticks parameters (you can use different options):
     if version == 'dplot':
@@ -733,17 +755,15 @@ def select_domain(
 def vis_stations(
         # Input variables:
         data_OUT:str,                     # Output path
+        uconfig:config,                   # User class
         # OUTPUT variables:
     ):                                    # Create new figure in output folder
-    # -- Get data for visualization:
-    lats = []
-    lons = []
-    stat = []
 
-    for i in uset.stations:
-        lats.append(uset.stations.get(i)[0])
-        lons.append(uset.stations.get(i)[1])
-        stat.append(uset.stations.get(i)[2])
+    # -- Get data for visualization:
+    stations = get_settings4stations(uconfig)
+    lats = [stations.get(i)[0] for i in stations]
+    lons = [stations.get(i)[1] for i in stations]
+    stat = [stations.get(i)[2] for i in stations]
 
     plt_title   = 'Geolocation of the random points (robinson projection)'
     output_name = 'STATIONS.png'
@@ -771,7 +791,7 @@ def vis_stations(
                                                 fontsize = 10          ,
                                                 dashes   = [0.3, 2]    )
     # -- Add relief, coastlines and countries:
-    m.shadedrelief(scale = 0.2)
+    #m.shadedrelief(scale = 0.2)
     m.drawcoastlines(linewidth = 0.1)
     m.drawcountries(linewidth  = 0.2, color = 'red', linestyle =  '--' )
 
@@ -831,15 +851,14 @@ def netcdf_grid(
         levels = MaxNLocator(nbins = 12).tick_values(min_value, max_value) 
         cs = m.contourf(xi, yi, var, cmap = colormap, levels = levels, extend = 'both')
     else:
-        cs = m.pcolor(  xi, yi, var, cmap = colormap, vmin = min_value ,
-                                                      vmax = max_value)
+        cs = m.pcolor(  xi, yi, var, cmap = colormap, vmin = min_value,vmax = max_value)
     # -- Add parallels and meridians:
     # labels = [left,right,top,bottom]
     m.drawparallels(np.arange(params_paral[0], params_paral[1], params_paral[2]),
                     labels     = [0, 1, 0, 0], fontsize = 10  , dashes = [0.3, 2])
 
-    if domain != 'Global':
-        m.drawmeridians(np.arange(params_merid[0], params_merid[1], params_merid[2]),
+    #if domain != 'Global':
+    m.drawmeridians(np.arange(params_merid[0], params_merid[1], params_merid[2]),
                         labels = [0, 0, 0, 1], fontsize = 10  , dashes = [0.3, 2]  )
     # -- Add water objects mask, coastlines and country boundaries:
     m.drawlsmask(land_color = 'coral', ocean_color = 'aqua', lakes = True, alpha = 0.05)
@@ -853,7 +872,7 @@ def netcdf_grid(
         cbar.formatter.set_powerlimits((0, 0))
     # -- Add Title
     if ltitle == True:
-        plt.title(f'{plt_title}')   
+        plt.title(f'{plt_title}')
     return m
 # ----------------------------------------------------------------------
 

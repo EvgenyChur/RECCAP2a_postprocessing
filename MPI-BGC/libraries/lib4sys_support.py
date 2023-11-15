@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-
+__all__ = [
+    'dep_clean',
+    'makefolder',
+]
 """
 Module has functions for work with file system:
     a. dep_clean --> clean previous results in output folder;
@@ -18,28 +21,22 @@ Version    Date       Name
            Initial release
     1.2    2023-05-05 Evgenii Churiulin, MPI-BGC
            Code refactoring
+    1.3    2023-11-09 Evgenii Churiulin, MPI-BGC
+           Added package import
 """
 
 # =============================     Import modules     =====================
 import os
 import sys
 # =============================   Personal functions   =====================
-# 1.1 Function --> dep_clean.
-def dep_clean(
-        path:str,                # Path to the folder with results
-    ):
-    # -- Start cleaning previous results
+def dep_clean(path:str):
+    """Cleaning previous results:"""
     for file in os.listdir(path):
         os.remove(path + file)
 
 # 1.2 Function --> makefolder.
-def makefolder(
-        # Input variables:
-        path:str,                # Input path for output folder
-        # OUTPUT variables:
-    ) -> str:                    # New path for output data
-
-    # -- Create folder for output data
+def makefolder(path:str) -> str:
+    """Make new output folder:"""
     try:
         # There is no folder in our output place. Create a new one
         os.makedirs(path)

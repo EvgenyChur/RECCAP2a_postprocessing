@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+__all__ = [
+    'line_settings',
+    'one_linear_plot',
+    'box_plot',
+    'one_plot',
+    'collage_plot',
+    'get_figure4lcc',
+    'pft_plot',
+    'seaborn_char_plot',
+]
 """
 The module has functions which are related to the visualization module.
 
@@ -27,88 +37,91 @@ Version    Date       Name
 """
 
 # =============================     Import modules     ====================
-# 1.1: Standard modules
 import os
 import sys
+sys.path.append(os.path.join(os.getcwd(), '..'))
 import numpy as np
 import xarray as xr
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from typing import Optional
+import warnings
+warnings.filterwarnings("ignore")
 
-# 1.2 Personal module
-sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.user_settings import (
-    time_limits, plt_limits, clb_limits, layout_settings, clb_diff_limits)
+from settings import (get_settings4ds_time_limits, get_limits4annual_plots,
+    get_settigs4maps, get_settigs4subplots, get_settigs4maps_diff, get_settings4plots,
+    config)
 from libraries import lib4visualization as vis
-from libraries import lib4colors as lcolor
 
 # =============================   Personal functions   ====================
+def line_settings(lst4dsnames:list[str], uclass:config) -> tuple[list[dict], list[dict]]:
+    """Get actual settings (color and style) for linear plots depending on
+       dataset name of your research simulation
 
-# 2.1 Function --> line_settings. Define relevant color and style for lines
-#                  depending on name of your research simulation
-def line_settings(
-        # Input variables:
-        lst4dsnames:list[str],              # Research datasets
-        # OUTPUT variables:
-    ) -> tuple[
-                list[dict],                 # Line colors for research simulations;
-                list[dict],                 # Line styles for your research simulations.
-    ]:
-    # Local variables:
+        **Input variables:**
+
+        lst4dsnames - Dataset names
+        uclass - User class with correct settings
+
+        **Output variables:**
+
+        clr - Line colors for research simulations;
+        stl - Line styles for your research simulations;
+    """
+    # -- Local variables:
     tcolor = 0 # index of colors in dict 
     tstyle = 1 # index of styles in dict 
-
-    clr = []
-    stl = []
-    for name in lst4dsnames:
-        clr.append(lcolor.xfire_colors.get(name)[tcolor])
-        stl.append(lcolor.xfire_colors.get(name)[tstyle])
+    # -- Get line properties:
+    clr = [get_settings4plots(uclass).get(name)[tcolor] for name in lst4dsnames]
+    stl = [get_settings4plots(uclass).get(name)[tstyle] for name in lst4dsnames]
     return clr, stl
 
-# 2.2 Function --> one_linear_plot (1D). Create linear plot based on the research parameters
+
 def one_linear_plot(
-        # Input variables:
         dtset_list:list[str],               # Datasets names
         region:str,                         # Research domain
         param_var:str,                      # Research parameter
         data:list[xr.DataArray],            # List with datasets data
         user_plt_settings:dict,             # User settings for plots (you can set them in fire_xarray.py)
         data_OUT:str,                       # Output path for the figure
+        uclass:config,                      # User settings
+        tstart:Optional[int] = 1980,        # First year of the research period
         point_mode: Optional[bool] = False, # Do you want to use this function in one_point.py script?
         ymin: Optional[float] = None,       # Limits for y axis (min)
         ymax: Optional[float] = None,       # Limits for y axis (max)
         ystep: Optional[float] = None,      # Limits for y axis (step)
-        # OUTPUT variables:
+        rmode: Optional[str] = None,
     ):                                      # Create new figure in output folder
+    """Create linear plot based on the research parameters: """
 
-    # 1. Define settings for plots (title, labels, legend position and plot name)
-    plt_title   = user_plt_settings.get('title')
-    ylabel      = user_plt_settings.get('ylabel')
-    leg_loc     = user_plt_settings.get('legend_pos' )
+    # -- Define settings for plots (title, labels, legend position and plot name):
+    plt_title = user_plt_settings.get('title')
+    ylabel = user_plt_settings.get('ylabel')
+    leg_loc = user_plt_settings.get('legend_pos' )
     output_name = user_plt_settings.get('output_name')
 
-    # 2. Define format settings for x and y axes depending on the actual mode 
+    # -- Define format settings for x and y axes depending on the actual mode
     #    and research parameter:
     if point_mode == False:
         version = 'netcdf_lplot'
-        # Set limits for y axis (min, max, step)
-        ymin    = plt_limits.get(region).get(param_var)[0]
-        ymax    = plt_limits.get(region).get(param_var)[1]
-        ystep   = plt_limits.get(region).get(param_var)[2]
+        if rmode == None:
+            # Set limits for y axis (min, max, step)
+            ymin = get_limits4annual_plots(tstart, uclass).get(region).get(param_var)[0]
+            ymax = get_limits4annual_plots(tstart, uclass).get(region).get(param_var)[1]
+            ystep = get_limits4annual_plots(tstart, uclass).get(region).get(param_var)[2]
     else:
         version = 'lplots_stomata2'
     # 3. Define limits for x axis
-    frs_yr = time_limits.get(param_var).get('OCN')[0]
-    lst_yr = time_limits.get(param_var).get('OCN')[1]
+    frs_yr = get_settings4ds_time_limits(uclass).get(param_var).get('OCN')[0]
+    lst_yr = get_settings4ds_time_limits(uclass).get(param_var).get('OCN')[1]
     # Apply corrections for x axis (time step, first year, last year )
     tstep  = 2 if (lst_yr - frs_yr) <= 26 else 5
     frs_yr = frs_yr - (frs_yr % tstep)          if frs_yr % tstep != 0 else frs_yr
     lst_yr = lst_yr + (tstep  - lst_yr % tstep) if lst_yr % tstep != 0 else lst_yr
 
-    # -- Get settings for line colors and styles:
-    colors, styles = line_settings(dtset_list)
+    # -- Get settings for line colors and styles:get_settings4plots
+    colors, styles = line_settings(dtset_list, uclass)
     # -- Create linear plot based on NetCDF data:
     line_plot = vis.netcdf_line_plots(
         len(dtset_list),
@@ -132,22 +145,21 @@ def one_linear_plot(
         lst_yr + 1,
         tstep,
     )
-    # Save plot and clean memory:
+    # -- Save plot and clean memory:
     plt.savefig(data_OUT + output_name, format = 'png', dpi = 300)
     plt.gcf().clear()
 
-# 2.3 Function ---> box_plot (1D). Create boxplot for stations
+
 def box_plot(
-        # Input variables:
         df:pd.DataFrame,                           # Research data
         user_plt_settings:dict,                    # User settings for plots (you can set them in one_point.py)
         data_OUT:str,                              # Output path
         ymin:float,                                # Limits for y axis (min)
         ymax:float,                                # Limits for y axis (max)
         ystep:float                                # Limits for y axis (step)
-        # OUTPUT variables:
     ):                                             # Create new figure in output folder
-    # 1. Define settings for plots (title, labels, legend position and plot name)
+    """ Create boxplot for stations:"""
+    # -- Define settings for plots (title, labels, legend position and plot name)
     plt_title   = user_plt_settings.get('title')
     ylabel      = user_plt_settings.get('ylabel')
     xlabel      = 'Available datasets'
@@ -156,12 +168,12 @@ def box_plot(
     fsize       = 14      # text size
     lpab        = 20      # label pad
 
-    # 2. Create area for plot
+    # -- Create area for plot:
     fig = plt.figure(figsize = (12,7))
     ax  = fig.add_subplot(111)
     ax  = sns.boxplot(x = 'dataset', y = 'data', data = df)
 
-    # 3. Settings for plots
+    # -- Settings for plots:
     ax.set_title(plt_title, color = clr, fontsize = fsize, pad      = lpab)
     ax.set_xlabel(xlabel  , color = clr, fontsize = fsize, labelpad = lpab)
     ax.set_ylabel(ylabel  , color = clr, fontsize = fsize, labelpad = lpab)
@@ -174,12 +186,12 @@ def box_plot(
                    color     = 'grey'  ,   # black
                    linestyle = 'dashed',   # solid
                    alpha     = 0.2     )   # 0.5
-    # Save plot and clean memory
+    # --Save plot and clean memory
     plt.savefig(data_OUT + output_name, format = 'png', dpi = 300)
     plt.close(fig)
     plt.gcf().clear()
 
-# 2.4 Function ---> one_plot (2D). Create plot for mean, std or trend.
+
 def one_plot(
         # Input variables:
         dtset_list:list[str],                      # Names of the actual datasets
@@ -192,11 +204,13 @@ def one_plot(
         ylabel:list[str],                          # Y axis labels
         title:list[str],                           # Plot titles
         path_OUT:list[str],                        # Plot output paths
+        uconfig:config,                            # User settings
         # OUTPUT variables:
     ):                                             # Create new figure in output folder
-    # Define limits and colormap scheme for colorbars
-    clb_lim = clb_limits.get(region)
-    # Create figure
+    """Create 2D mapd for mean, std or trend:"""
+    # -- Define limits and colormap scheme for colorbars
+    clb_lim = get_settigs4maps(uconfig).get(region)
+    # -- Create figure
     for i in range(len(dtset_list)):
         print(f'Plot {p_mode} for {dtset_list[i]} over {region} region')
         fig  = plt.figure(figsize = (8,8))
@@ -205,69 +219,62 @@ def one_plot(
             ax, region  , lon[i], lat[i], data[i], p_mode, var, clb_lim, ylabel,
                 title[i], ltitle = True,
         )
-        # Save plot and clean memory
+        # -- Save plot and clean memory
         plt.savefig(path_OUT[i], format = 'png', dpi = 300)
         plt.close(fig)
         plt.gcf().clear()
 
-# 2.5 Function ---> collage_plot (2D). Create collage plot for mean, std or trend.
+
 def collage_plot(
-        # Input variables:
-        dtset_list:list[str],                  # Names of the research datasets
-        region:str,                            # Research domain
-        lon:list[np.array],                    # 1D arrays with longitudes
-        lat:list[np.array],                    # 1D arrays with latitudes
-        lst4mean:list[xr.DataArray],           # 2D arrays with mean values
-        lst4std:list[xr.DataArray],            # 2D arrays with STD values
-        lst4trends:list[xr.DataArray],         # 2D arrays with time trend values
-        var:str,                               # Reseach parameter
-        bm_ylabel:list[str],                   # label of y axis
-        c_title:str,                           # plot title
-        c_path_OUT:str,                        # output path
-        ldiff: Optional[bool] = False,         # Do you want to create difference plot?
-        refer: Optional[str] = None,           # Name of the reference dataset
-        comp_ds: Optional[str] = None,         # Name of the research dataset
-        clb_uniq: Optional[list[dict]] = None, # Use uniq user settings from fire_ratio.py
-        # OUTPUT variables:
-    ):                                         # Create new figure in output folder
-    # Local variables:
+    dtset_list:list[str], region:str, lon:list[np.array], lat:list[np.array],
+    lst4mean:list[xr.DataArray], lst4std:list[xr.DataArray], lst4trends:list[xr.DataArray],
+    var:str, bm_ylabel:list[str], c_title:str, c_path_OUT:str, uconfig:config,
+    ldiff: Optional[bool] = False, refer: Optional[str] = None,
+    comp_ds: Optional[str] = None, clb_uniq: Optional[list[dict]] = None):
+    """ Create collage plot for mean, std or trend:
+
+        **Input variables:**
+
+        dtset_list - Datasets names
+        region - Research domain
+        lon - 1D arrays with longitudes
+        lat - 1D arrays with latitudes
+        lst4mean - 2D arrays with mean values
+        lst4std - 2D arrays with STD values
+        lst4trends - 2D arrays with time trend values
+        var - Reseach parameter
+        bm_ylabel - label of y axis
+        c_title - plot title
+        c_path_OUT - output path
+        uconfig - User settings
+        ldiff - Do you want to create difference plot?
+        refer - Name of the reference dataset
+        comp_ds - Name of the research dataset
+        clb_uniq -Use uniq user settings from fire_ratio.py
+
+        **Output variables:** Create plot in output folder
+    """
+    # -- Local variables:
     nrows_num = 3 # row numbers for collage plot
-
-    # Define limits and colormap scheme
-    if var == 'ratio':
-        clb_lim = clb_uniq
-    else:
-        clb_lim = clb_limits.get(region)
-
+    # -- Define limits and colormap scheme
+    clb_lim = clb_uniq if var == 'ratio' else get_settigs4maps(uconfig).get(region)
     # -- Settings for position of subplots on the figure:
-    # Get actual values
-    pad   = layout_settings.get(region).get(len(dtset_list))[0]
-    w_pad = layout_settings.get(region).get(len(dtset_list))[1]
-    h_pad = layout_settings.get(region).get(len(dtset_list))[2] 
-    lens  = layout_settings.get(region).get(len(dtset_list))[3] 
-    higt  = layout_settings.get(region).get(len(dtset_list))[4] 
-
+    tight_settings = get_settigs4subplots(uconfig).get(region).get(len(dtset_list))
     # -- Start visualization:
     fig, axes = plt.subplots(
         nrows = nrows_num,
         ncols = len(dtset_list),
-        figsize = (lens, higt),
+        figsize = (tight_settings[3], tight_settings[4]),
     )
     # -- Define data for visualization:
     for i, dtset_name in enumerate((dtset_list)):
-        if ldiff == True:
-            if i == (len(dtset_list) - 1):
-                lims = clb_diff_limits.get(region)
-            else:
-                lims = clb_lim
-            m_data = lst4mean[i].values
-            s_data = lst4std[i].values
-            t_data = lst4trends[i].values
+        if ldiff:
+            lims = get_settigs4maps_diff(uconfig).get(region) if i == (len(dtset_list) - 1) else clb_lim
+            m_data, s_data, t_data = lst4mean[i].values, lst4std[i].values, lst4trends[i].values
         else:
-            lims   = clb_lim
-            m_data = lst4mean[i]
-            s_data = lst4std[i]
-            t_data = lst4trends[i]
+            lims = clb_lim
+            m_data, s_data, t_data = lst4mean[i], lst4std[i], lst4trends[i]
+
         # -- Create plots (MEAN, STD, Trends)
         bm_map = vis.netcdf_grid(axes[0, i] , region, lon[i], lat[i], m_data,
                                  'mean', var, lims  , bm_ylabel)
@@ -288,39 +295,49 @@ def collage_plot(
 
     for i, dtset_name in enumerate((dtset_list)):
         if ldiff == True:
-            axes[0, 0].set_title(refer       )
-            axes[0, 1].set_title(comp_ds     )
+            axes[0, 0].set_title(refer)
+            axes[0, 1].set_title(comp_ds)
             axes[0, 2].set_title(f'Difference \n({refer} - {comp_ds})')
         else:
             axes[0, i].set_title(dtset_name)
-    # Set subplot positions and add plot title
-    plt.tight_layout(pad = pad, w_pad = w_pad, h_pad = h_pad) 
-    fig.suptitle(c_title, fontsize = 16) #y=1.02
-    # Save plot and clean memory
+    # -- Set subplot positions and add plot title (Can produce ERRORS in new versions):
+    plt.tight_layout(
+        pad = tight_settings[0],
+        w_pad = tight_settings[1],
+        h_pad = tight_settings[2],
+    )
+    fig.suptitle(c_title, fontsize = 16)
+    # -- Save plot and clean memory:
     plt.savefig(c_path_OUT, format = 'png', dpi = 300)
     plt.close(fig)
     plt.gcf().clear()
 
-# 2.6 get_figure4lcc --> Create collage figure with information about burned area
-#                        for different data sources:
-#                        a. vegetation classes based on ESA-CCI MODIS 5.1 dataset (ba_esa_pft.py)
-#                        b. vegetation classes based on OCN datasets (ba_ocn_pft.py)
+
 def get_figure4lcc(
-        # Input variables:
-        rows:int,                      # Row numbers (for subplot)
-        cols:int,                      # Column numbers (for subplot)
-        lon:'np.ndarray[float]',       # Longitude
-        lat:'np.ndarray[float]',       # Latitude
-        lst4data:list[xr.DataArray],   # Research datasets
-        mf4analysis:str,               # Research parameter (burned_area, fFire, cVeg, npp, gpp, lai)
-        param:str,                     # Statistical parameter (mean, std, trend)
-        clb_lim:list[dict],            # Subplot settings (colorbar, ranges and ets)
-        region:str,                    # Research domain (Global, Europe, Tropics, NH, Other).
-        title:list[str],               # Plot subtitles for each ESA-CCI PFT
-        plt_name:str,                  # Plot title
-        path_exit:str,                 # Output path
-        # OUTPUT variables:
-    ):                                 # Create collage plot
+    rows:int, cols:int, lon:'np.ndarray[float]', lat:'np.ndarray[float]',
+    lst4data:list[xr.DataArray], mf4analysis:str, param:str, clb_lim:list[dict],
+    region:str, title:list[str], plt_name:str, path_exit:str):
+    """ Create collage figure with information about burned area for different data sources:
+        a. vegetation classes based on ESA-CCI MODIS 5.1 dataset (ba_esa_pft.py)
+        b. vegetation classes based on OCN datasets (ba_ocn_pft.py)
+
+        **Input variables:**
+
+        rows - Row numbers (for subplot)
+        cols - Column numbers (for subplot)
+        lon - Longitude
+        lat - Latitude
+        lst4data - Research datasets
+        mf4analysis - Research parameter (burned_area, fFire, cVeg, npp, gpp, lai)
+        param - Statistical parameter (mean, std, trend)
+        clb_lim - Subplot settings (colorbar, ranges and ets)
+        region - Research domain (Global, Europe, Tropics, NH, Other)
+        title - Plot subtitles for each ESA-CCI PFT
+        plt_name - Plot title
+        path_exit - Output path
+
+        **Output variables:** Create plot in output folder
+    """
     # -- Local variables:
     ylabel = '1000 km\u00B2'
     # -- Add auto correction of actual subplots position:
@@ -335,6 +352,7 @@ def get_figure4lcc(
     for i in range(egrid[0]):
         for j in range(egrid[1]):
             ax_list.append(plt.subplot2grid(egrid, (i, j), rowspan = 1, colspan = 1))
+
     # -- Add data to subplots:
     for i in range(len(lst4data)):
         plot = vis.netcdf_grid(
@@ -363,15 +381,19 @@ def get_figure4lcc(
     plt.close(fig)
     plt.gcf().clear()
 
-# 2.7 pft_plot --> Create linear plots for different PFT:
-def pft_plot(
-        # Input variables:
-        data:list[xr.DataArray],          # Research datasets
-        settings:dict,                    # Plot settings (legend, colors, styles, limits)
-        ptype:str,                        # PFT group
-        pout:str,                         # Output path for figure
-        # Output variables:
-    ):                                    # Create a new plot in output folder
+
+def pft_plot(data:list[xr.DataArray], settings:dict, ptype:str, pout:str):
+    """Create linear plots for different PFT:
+
+        **Input variables:**
+
+        data - Research datasets
+        settings - Plot settings (legend, colors, styles, limits)
+        ptype - PFT group
+        pout - Output path for figure
+
+        **Output variables:** Create plot in output folder
+    """
     # -- Plot settings:
     mode_set  = 'lplots_stomata2'
     plt_title = 'Comparison of PFT groups based on OCN and ESA-CCI MODIS data'
@@ -393,7 +415,7 @@ def pft_plot(
         styles,
         point_mode = True,
     )
-    # Settings for plots:
+    # -- Settings for plots:
     vis.line_plot_settings(
         line_plot,
         mode_set,
@@ -406,5 +428,58 @@ def pft_plot(
     )
     # -- Save plot and clean memory:
     plt.savefig(pout + f'PFT_{ptype}.png', format = 'png', dpi = 300)
+    plt.gcf().clear()
+
+
+def seaborn_char_plot(
+    dtset_list:list[str],                  # Names of the research datasets
+    df:pd.DataFrame,
+    data_OUT:str,                       # Output path for the figure
+    user_plt_settings:dict,             # User settings for plots (you can set them in fire_xarray.py)
+    uconfig: config,                    # User class
+    ymin: Optional[float] = None,       # Limits for y axis (min)
+    ymax: Optional[float] = None,       # Limits for y axis (max)
+    ystep: Optional[float] = None,      # Limits for y axis (step)
+    ):
+    # -- Define settings for plots (title, labels, legend position and plot name):
+    plt_title   = user_plt_settings.get('title')
+    ylabel      = user_plt_settings.get('ylabel')
+    leg_loc     = user_plt_settings.get('legend_pos' )
+    output_name = user_plt_settings.get('output_name')
+    version     = 'RECCAP2'
+    # -- Line properties:
+    palette = {}
+    hatches = []
+    for ds_name in dtset_list:
+        palette[ds_name] = get_settings4plots(uconfig).get(ds_name)[0]
+        hatches.append(get_settings4plots(uconfig).get(ds_name)[2])
+    # -- Set a different hatch for each bar:
+    fig = plt.figure(figsize = (12,7))
+    ax  = fig.add_subplot(111)
+    bar = sns.barplot(
+        ax =ax,
+        x = df.index,
+        y = df['data'],
+        hue = 'sim',
+        data = df,
+        palette=palette)
+    # -- Loop over the bars:
+    for bars, hatch in zip(ax.containers, hatches):
+        # -- Set a different hatch for each group of bars
+        for bar in bars:
+            bar.set_hatch(hatch)
+    # -- Settings for plots:
+    vis.line_plot_settings(
+        ax,
+        version,
+        plt_title,
+        ylabel,
+        leg_loc,
+        ymin,
+        ymax,
+        ystep,
+    )
+    # -- Save plot and clean memory:
+    plt.savefig(data_OUT + output_name, format = 'png', dpi = 300)
     plt.gcf().clear()
 # =======================================================================

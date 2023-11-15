@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+__all__ = [
+    'loc_datasets_catalog',
+    'loc_ocn_catalog',
+    'loc_jules_catalog',
+    'loc_orchidee_catalog',
+    'loc_dataset_units',
+    'loc_output_folders',
+]
 """
 Special library for the local machine with actual inforamtation about location 
 of dataset and OCN simulations. These parameters presented into two subrotunes:
@@ -53,26 +61,27 @@ Version    Date       Name
            4. Created new function "output_folders" for output paths
     1.5    2023-05-08 Evgenii Churiulin, MPI-BGC
            Code refactoring
+    1.6    2023-11-09 Evgenii Churiulin, MPI-BGC
+           Add changes according to path_settings updates. Added packet import
 """
 # =============================     Import modules     ===================
 
 # ========================   Personal functions   ========================
-# 1. datasets_catalog --> Get actual information about input datasets:
-def datasets_catalog(
-        # Input variables:
-        # OUTPUT variables:
-    )-> list[dict]:                         # Actual parameters for comparison datasets
-    # -- Start program:
+def loc_datasets_catalog()-> list[dict]:
+    """Get actual information about input datasets
+    (Mode, Dataset name, path, NetCDF attribute)"""
+
     # -- Main settings (common path and user)
     main    = 'C:/Users/evchur/Desktop/DATA'
+    # -- Input datasets (type, name, path, NetCDF attribute):
     catalog = [
         # Fire datasets and simulations:
         # Groups of ESA-CCL MODISv5.1 datasets-
-        {'mode'      : 'burned_area',                                          # Dataset type
-         'dataset'   : 'BA_MODIS',                                             # Dataset name
+        {'mode'      : 'burned_area',
+         'dataset'   : 'BA_MODIS',
          'path'      : main + (
-                       '/ESACCI-L4_FIRE-BA-MODIS-fv5.1_2001-2018_annual.nc'),  # Dataset path
-         'attribute' : 'burned_area',                                          # Dataset research attribute
+                       '/ESACCI-L4_FIRE-BA-MODIS-fv5.1_2001-2018_annual.nc'),
+         'attribute' : 'burned_area',
         },
 
         {'mode'      : 'burned_area_nat',
@@ -201,15 +210,15 @@ def datasets_catalog(
         },
     ]
     return catalog
-# ----------------------------------------------------------------------
 
-# 2. ocn_catalog --> Get actual input information about OCN simulations:
-def ocn_catalog(
-        # Input variables:
-        var:str,                           # Reseacrh parameter: (burned_area, npp, gpp, ...)
-        # OUTPUT variables:
-    ) -> tuple[dict,                       # Input paths for OCN simulations (catalog)
-               dict]:                      # NetCDF atribitte for OCN simulation (attribute_catalog)
+
+def loc_ocn_catalog(var:str) -> tuple[dict, dict]:
+    """Get actual input information about OCN simulations:
+
+        var -> # Reseacrh parameter: (burned_area, npp, gpp, ...)
+        catalog -> Input paths for OCN simulations (catalog)
+        attribute_catalog -> NetCDF atribitte for OCN simulation (attribute_catalog)
+    """
     # -- Start program:
     if var == 'burned_area':
         var = 'burnedArea'
@@ -253,19 +262,18 @@ def ocn_catalog(
          'lai'           : 'lai',
          'nbp'           : 'nbp',
          'landCoverFrac' : 'landCoverFrac',
-
     }
     return catalog, attribute_catalog 
-# ----------------------------------------------------------------------
 
-# 3. jules_catalog --> Get actual input information about JULES simulations:
-def jules_catalog(
-        # Input variables:
-        var:str,                           # Reseacrh parameter: (burned_area, npp, gpp, ...)
-        # OUTPUT variables:
-    ) -> tuple[dict,                       # Input paths for JULES simulations (catalog)
-               dict]:                      # NetCDF atribitte for JULES simulation (attribute_catalog)
-    # -- Start program:
+
+def loc_jules_catalog(var:str) -> tuple[dict, dict]:
+    """Get actual input information about JULES simulations:
+
+        var -> Reseacrh parameter: (burned_area, npp, gpp, ...)
+        catalog -> Input paths for JULES simulations (catalog)
+        attribute_catalog -> NetCDF atribitte for JULES simulation (attribute_catalog)
+    """
+    # -- Common path for all OCN simulations:
     pin = 'C:/Users/evchur/Desktop/JULES'
 
     if var == 'burned_area':
@@ -291,17 +299,16 @@ def jules_catalog(
          'nbp'         : 'nbp',        # Kg/m2/360
     }
     return  catalog, attribute_catalog
-# ----------------------------------------------------------------------
 
-# 4. orchidee_catalog --> Get actual input information about ORCHIDEE simulations:
-def orchidee_catalog(
-        # Input variables:
-        var:str,                           # Reseacrh parameter: (burned_area, npp, gpp, ...)
-        # OUTPUT variables:
-    ) -> tuple[dict,                       # Input paths for OCN simulations (catalog)
-               dict]:                      # NetCDF atribitte for OCN simulation (attribute_catalog)
-    # -- Start program:
-    # Common path for all OCN simulations
+
+def loc_orchidee_catalog(var:str) -> tuple[dict, dict]:
+    """Get actual input information about ORCHIDEE simulations:
+
+        var -> Reseacrh parameter: (burned_area, npp, gpp, ...)
+        catalog -> Input paths for OCN simulations (catalog)
+        attribute_catalog -> NetCDF atribitte for OCN simulation (attribute_catalog)
+    """
+    # -- Common path for all OCN simulations
     pin = 'C:/Users/evchur/Desktop/ORCHIDEE'
 
     if var == 'burned_area':
@@ -325,23 +332,31 @@ def orchidee_catalog(
          'nbp'           : 'nbp',        # units = "kg C m-2 s-1"
     }
     return  catalog, attribute_catalog
-# ----------------------------------------------------------------------
+
 
 # 5. dataset_units --> Get actual auxiliary (shorh and full dataset names,
 #                      dataset units) information for plots:
-def dataset_units(
-        # Input variables:
-        # OUTPUT variables:
-    ) -> list[dict]:                   # Output parameters for plots
+def loc_dataset_units() -> list[dict]:
+    """User settings from input NetCDF files:
+
+        mode - mode for work
+        short_name -  short name for y axis
+        axis_name - parameter name
+        units_initial - initial units in OCN simulations
+        units4line - units for linear plot  (total)
+        units4collage - units for collage plot (2d maps)
+
+    Parameters are important for plots
+    """
     # -- Define output parameters:
     dataset_info = [
         # Fire datasets and simulations:
-        {'mode'         : 'burned_area',                 # mode for work
-         'short_name'   : 'BA',                          # short name for y axis
-         'axis_name'    : 'Burned area',                 # parameter name 
-         'units_initial': 'fraction (0 - 1)',            # initial units in OCN simulations 
-         'units4line'   : '1000 km\u00B2',               # units for linear plot  (total)
-         'units4collage': '1000 km\u00B2',               # units for collage plot (2d maps)
+        {'mode'         : 'burned_area',
+         'short_name'   : 'BA',
+         'axis_name'    : 'Burned area',
+         'units_initial': 'fraction (0 - 1)',
+         'units4line'   : '1000 km\u00B2',
+         'units4collage': '1000 km\u00B2',
         },
         # Biomass and Cardon datasets:
         {'mode'         : 'cVeg',
@@ -417,16 +432,13 @@ def dataset_units(
         },
     ]
     return dataset_info
-# ----------------------------------------------------------------------
 
-# 6. output_folders --> Get actual output paths for calculation results
-def output_folders(
-        # Input variables:
-        # OUTPUT variables:
-    ) -> dict:                                  # Output paths
-    # -- Start function:
+
+def loc_output_folders() -> dict:
+    """User function for creation of dictionary with output path:"""
+    # -- Local variables:
     user   = 'evchur'
-    
+
     # 1. Path settings for local machine
     # 1.1 Common path (all scripts)
     main   = f'C:/Users/{user}/RESULTS'
@@ -471,7 +483,7 @@ def output_folders(
         'rand_ts4s0'            : test_dat  + '/RUND_TS',
     }
     return pouts
-# ----------------------------------------------------------------------
+
 
 if __name__ == '__main__':
     # -- User settings
@@ -479,12 +491,12 @@ if __name__ == '__main__':
     nstars = 50
     var = 'burned_area'
     # -- Main program:
-    datasets_paths = datasets_catalog()
-    ocn_path,params = ocn_catalog(var)
-    datasets_data = dataset_units()
-    outputs = output_folders()
+    datasets_paths = loc_datasets_catalog()
+    ocn_path,params = loc_ocn_catalog(var)
+    datasets_data = loc_dataset_units()
+    outputs = loc_output_folders()
     # -- Print info:
-    if lprint is True:
+    if lprint:
         print('*' * 50, '\n')
         print(datasets_paths)
         print('*' * 50, '\n')

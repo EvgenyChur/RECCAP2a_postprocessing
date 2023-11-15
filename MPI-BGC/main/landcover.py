@@ -39,94 +39,107 @@ import warnings
 warnings.filterwarnings("ignore")
 # -- Personal modules:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4sys_support import makefolder
-from libraries.lib4pft import ocn_pft
-from libraries.lib4colors import colors_ocn, styles_ocn
-from libraries.lib4xarray import get_data, get_interpol
-from libraries.lib4visualization import plot_diff_hist, tick_rotation_size
-from settings.user_settings import time_limits, stations
-from settings.path_settings import get_path_in, output_path
-
+from settings import (logical_settings, config, get_path_in, get_output_path,
+    get_settings4ds_time_limits, get_settings4stations, get_ocn_pft,
+    get_settings4plots_landcover)
+from libraries import (makefolder, get_data, get_interpol, plot_diff_hist,
+    tick_rotation_size)
 # =============================   Personal functions   =================
-# -- get_BA_data --> Get data presented on OCN grid for your research parameter
-def read_data(
-        # Input variables:
-        region:str,               # Research domain (Global, Europe, Other..)
-        lst4datasets:list[str],   # Research datasets for analysis
-        var:str,                  # Research parameter (nc - attrubite)
-        linfo:bool,               # Do you want to get more information about data?
-        lresmp:bool,              # Do you want to use time resample algorithm?
-        # Output variables:
-    ) -> tuple[list[xr.Dataset]]: # Research data presented on OCN grid
+def read_data(region:str, lst4datasets:list[str], var:str, lsettings:bool,
+        lresmp:bool, uconfig:config) -> tuple[list[xr.Dataset]]:
+    """Get data presented on OCN grid for your research parameter
 
+    **Input variables:**
+        region - Research domain (Global, Europe, Other..)
+        lst4datasets - Research datasets for analysis
+        var - Research parameter (nc - attrubite)
+        lsettings - logical settings
+        lresmp - Do you want to use time resample algorithm?
+        uconfig - User class with settings
+
+    **Output variables:**
+        lst4data - Research data presented on OCN grid
+    """
     # -- Get information about datasets:
-    lmodis_nat      = True
+    lmodis_nat = True
     # -- Get absolute data paths
-    ipaths, res_param   = get_path_in(lst4datasets, var)
-    if lmodis_nat == True:
+    ipaths, res_param = get_path_in(lst4datasets, var, lsettings)
+    if lmodis_nat:
         for i in range(len(lst4datasets)):
             if lst4datasets[i] == 'BA_MODIS':
-                tmp_ipath, tmp_res_param = get_path_in(['BA_MODIS'], 'burned_area_nat')
-                ipaths[i]  = tmp_ipath[0]
+                tmp_ipath, tmp_res_param = get_path_in(['BA_MODIS'], 'burned_area_nat', lsettings)
+                ipaths[i] = tmp_ipath[0]
                 res_param[i] = tmp_res_param[0]
     # -- Read in data:
     lst4data = get_data(
-        ipaths, lst4datasets, var, res_param, linfo = linfo, lresmp = lresmp)
+        ipaths,
+        lst4datasets,
+        var,
+        res_param,
+        uconfig,
+        linfo = lsettings.get('lnc_info'),
+        lresmp = lresmp,
+    )
     # -- Convert data to one grid size:
-    if var == 'burned_area':   
-        lst4data = get_interpol(lst4data, lst4datasets, region, var)
+    if var == 'burned_area':
+        lst4data = get_interpol(lst4data, lst4datasets, region, var, uconfig)
     return lst4data
 
-# ================   User settings (have to be adapted)  ==============
 
-# -- Logical parameteres:
-# Do you want to get more information about data?
-linfo = False
-# Do you want to get data for PFT at stations?
-lstations = True
-# Do you want to plot histogram of BA difference by PFT?
-lba_hist = True
-
-# -- Select research datasets, research parameters and domain:
-# Research region ('Global', Europe, NH, Tropics):
-region = 'Global'
-# Select your reference dataset  ('BA_MODIS', 'GFED4.1s'):
-refer = 'BA_MODIS'
-# Research parameter:
-param_BA  = 'burned_area'
-# Name of land cover parameter
-param_LC  = 'landCoverFrac'
-
-# -- Get names of the research datasets with burned area and land cover:
-# Options: OCN_S2.1, _S2.2, _S3.1, _S3.2, _S2Prog, _S2Diag
-lst4ba_ds = ['OCN_S2Prog', 'OCN_S2Diag']  + [refer]
-lst4lc_ds = lst4ba_ds[:-1]
-
-# -- Define time period (Data have to have the same time periods
-#     GFED - 1997 to 2016; MODIS - 2001 - 2020; optimal 2001 - 2016
-t_start   = time_limits.get(param_BA).get('OCN')[0]
-t_stop    = time_limits.get(param_BA).get('OCN')[1]
-
-# -- Settings for collage plot:
-if lstations == True:
-    rows      =   4   # row numbers
-    cols      =   5   # column numbers
-    ymin_pft  =   0.0 # y min
-    ymax_pft  = 100.1 # y max
-    ystep_pft =  10.0 # y step
-    fsize     =  10.0 # text fontsize
-    deg       =  90.0 # angle of x axis labels
-
-# ============================    Main program   ========================
 if __name__ == '__main__':
+    # ================   User settings (have to be adapted)  ==============
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True, station_mode = True)
+    # -- Load other logical parameters:
+    linfo = lsets.get('lnc_info')         # Do you want to get more information about data?
+    lstations = lsets.get('station_mode') # Do you want to get data for PFT at stations?
+    lba_hist = True                       # Do you want to plot histogram of BA difference by PFT?
+
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class(ocn = [2003, 2020], modis = [2003,2020])
+    tlm = bcc.user_settings()
+    # -- Load user settings:
+    stations = get_settings4stations(tlm)
+    ocn_pft = get_ocn_pft(tlm)
+    ln_colors = get_settings4plots_landcover(tlm)
+    colors_ocn = [ln_colors.get('OCN').get(item['PFT'])[0] for item in ocn_pft]
+    styles_ocn = [ln_colors.get('OCN').get(item['PFT'])[1] for item in ocn_pft]
+
+    # -- Select research datasets, research parameters and domain:
+    region = 'Global'          # Research region ('Global', Europe, NH, Tropics)
+    refer = 'BA_MODIS'         # Select your reference dataset  ('BA_MODIS', 'GFED4.1s')
+    param_BA = 'burned_area'   # Research parameter
+    param_LC = 'landCoverFrac' # Name of land cover parameter
+
+    # -- Get names of the research datasets with burned area and land cover:
+    # Options: OCN_S2.1, _S2.2, _S3.1, _S3.2, _S2Prog, _S2Diag
+    lst4ba_ds = ['OCN_S2Prog_v4', 'OCN_S2Diag_v4']  + [refer]
+    lst4lc_ds = lst4ba_ds[:-1]
+
+    # -- Define time period (Data have to have the same time periods
+    #     GFED - 1997 to 2016; MODIS - 2001 - 2020; optimal 2001 - 2016
+    t_start = get_settings4ds_time_limits(tlm).get(param_BA).get('OCN')[0]
+    t_stop = get_settings4ds_time_limits(tlm).get(param_BA).get('OCN')[1]
+
+    # -- Settings for collage plot:
+    if lstations == True:
+        rows      =   4   # row numbers
+        cols      =   5   # column numbers
+        ymin_pft  =   0.0 # y min
+        ymax_pft  = 100.1 # y max
+        ystep_pft =  10.0 # y step
+        fsize     =  10.0 # text fontsize
+        deg       =  90.0 # angle of x axis labels
+
+    # ============================    Main program   ========================
     print('START program')
     # -- Define output paths and create folder for results:
-    data_OUT = makefolder(output_path().get('landcover'))
+    data_OUT = makefolder(get_output_path(lsets).get('landcover'))
     print(f'Your data will be saved at {data_OUT}')
-    
+
     # -- Get burned area and land cover data (12 PFT + Bare soil in OCN simulation)
-    lst4veget = read_data(region, lst4lc_ds, param_LC, linfo, False)
-    lst4ba    = read_data(region, lst4ba_ds, param_BA, linfo, True )
+    lst4veget = read_data(region, lst4lc_ds, param_LC, lsets, False, tlm)
+    lst4ba    = read_data(region, lst4ba_ds, param_BA, lsets, True, tlm)
 
     # -- Get actual PFT data:
     pft4simulations = []           # full list of PFT data
@@ -134,63 +147,73 @@ if __name__ == '__main__':
         landCover = (lst4veget[j][param_LC]
                         .sel(time = slice(f'{t_start}', f'{t_stop}'))
                         .resample(time = 'A').mean('time'))
-
-        veg_type  = landCover.vegtype.values                                       # get PFT values
-        pft_data  = []                                                             # PFTs data in OCN simulation
-        for i in range(len(veg_type)):
-            pft_data.append(landCover[:, i, :, :])                                 # Get actual data for each PFT
+        # -- Get PFT values:
+        veg_type  = landCover.vegtype.values
+        # -- Get actual data for each OCN PFT in simulation:
+        pft_data  = [landCover[:, i, :, :] for i in range(len(veg_type))]
         pft4simulations.append(pft_data)
+
     # -- Get actual PFT names:
-    pft_sname = []                                                                 # short name of PFTs in OCN simulations (they are the same)
+    pft_sname = [] # short name of PFTs in OCN simulations (they are the same)
     for i in range(len(veg_type)):
         for item in ocn_pft:
             if (item['veg_type'] == veg_type[i]):
                 pft_sname.append(item['PFT'])
 
-    # 4.3 PFT analysis for each station (table + figure)
-    if lstations == True:
+    # -- PFT analysis for each station (table + figure):
+    if lstations:
         print('Working on collage plot and data for stations \n')
-
-        # 4.3.1 Get actual PFT data for each station
+        # -- Get actual PFT data for each station
         pft4datasets = []
         for j in range(len(lst4lc_ds)):
-            pft4stations = []                                                      # PFT for all stations
-            nam_stations = []                                                      # station name
+            pft4stations = [] # PFT for all stations
+            nam_stations = [] # station names
             for st in range(len(stations)):
-                pft4station = []                                                   # PFT for each station
-                lats        = stations.get(st + 1)[0]                         # latitude  of the station
-                lons        = stations.get(st + 1)[1]                         # longitude of the station
-                nam_stations.append(stations.get(st + 1)[2])                  # name      of the station
-                for i in range(len(pft4simulations[j])):
-                    # Collect PFT for station
-                    pft4station.append(pft4simulations[j][i].sel(lat = lats,
-                                                                 lon = lons,
-                                                                 method = 'nearest'))
-                pft4stations.append(pft4station)                                   # Collect stations from one dataset
-            pft4datasets.append(pft4stations)                                      # Collect datasets
+                # Get name of each station:
+                nam_stations.append(stations.get(st + 1)[2])
+                # Get latitude and longitude for each station:
+                lats, lons = stations.get(st + 1)[0], stations.get(st + 1)[1]
+                # Get PFT for each station:
+                pft4station = [
+                    pft4simulations[j][i].sel(lat = lats, lon = lons, method = 'nearest')
+                    for i in range(len(pft4simulations[j]))]
+                # -- Collect stations from one dataset:
+                pft4stations.append(pft4station)
+            # -- Collect datasets:
+            pft4datasets.append(pft4stations)
 
-        # 4.3.2 Get PFT table for stations
+        # -- Get PFT table for stations:
         for j in range(len(lst4lc_ds)):
             pft_dataset = []
             for st in range(len(stations)):
                 pft_station = []
                 for i in range(len(pft4datasets[j][st])):
-                    st_name     = pd.Series(nam_stations[st])                          # select station name
-                    st_pft_name = pd.Series(pft_sname[i])                              # select pft name
-                    st_data     = pd.Series(pft4datasets[j][st][i].mean('time').data * 100)  # get PFT values  in %
-                    pft_station.append(pd.concat([st_name    ,
-                                                  st_pft_name,
-                                                  st_data    ], axis = 1))
-                pft_dataset.append(pd.concat(pft_station, axis = 0 ))              # Collect pft's for one station
-            df_pft_all = pd.concat(pft_dataset, axis = 1 )                         # Collect all stations
+                    pft_station.append(
+                        pd.concat(
+                            [
+                                pd.Series(nam_stations[st]),
+                                pd.Series(pft_sname[i]),
+                                pd.Series(pft4datasets[j][st][i].mean('time').data * 100)  # get PFT values  in %
+                            ], axis = 1
+                        )
+                    )
+                # Collect pft's for one station:
+                pft_dataset.append(pd.concat(pft_station, axis = 0 ))
+            # Collect all stations:
+            df_pft_all = pd.concat(pft_dataset, axis = 1 )
+            # -- Rename columns and save file:
+            df_pft_all = (
+                df_pft_all.rename(columns = {0:'site', 1:'pft', 2:'data'})
+                          .reset_index(drop = True)
+            )
+            df_pft_all.to_csv(
+                data_OUT + f'{lst4lc_ds[j]}_PFT.csv',
+                float_format = '%.3f',
+                sep = ';',
+                index = True,
+            )
 
-            # Rename columns and save file
-            df_pft_all = (df_pft_all.rename(columns = {0:'site', 1:'pft', 2:'data'})
-                                    .reset_index(drop = True))
-            df_pft_all.to_csv(data_OUT + f'{lst4lc_ds[j]}_PFT.csv',
-                                float_format = '%.3f', sep = ';', index = True)
-
-        # 4.3.3 Create PFT plot for stations
+        # -- Create PFT plot for stations:
         for j in range(len(lst4lc_ds)):
             # -- Get grid
             fig = plt.figure(figsize = (14,10))
@@ -255,12 +278,10 @@ if __name__ == '__main__':
         if lst4ba_ds[i] == refer:
             ref = lst4ba.pop(i)
     #    b. Get difference between experiments (refer - similation)
-    diff_ba = []
-    for i in range(len(lst4ba)):
-        diff_ba.append(ref[param_BA] - lst4ba[i][param_BA])
+    diff_ba = [ref[param_BA] - lst4ba[i][param_BA] for i in range(len(lst4ba))]
 
     # -- Create histogram for each PFT:
-    if lba_hist == True:
+    if lba_hist:
         print('Working on Burned area bar chart and data \n')
         # -- Cycle by datasets:
         for i in range(len(lst4lc_ds)):
@@ -295,7 +316,7 @@ if __name__ == '__main__':
                          f'different PFTs from {t_start} to {t_stop} over {region} region')
             pout      = data_OUT + f'BA_DIFF_{lst4lc_ds[i]}_{refer}.png'
 
-            if lst4lc_ds[i] in ('OCN_S2.1','OCN_S2.2','OCN_S3.1','OCN_S3.2','OCN_S2Prog'):
+            if lst4lc_ds[i] in ('OCN_S2Prog', 'OCN_S2Prog_v3', 'OCN_S2Prog_v4'):
                 ymin_ba = -3500.0
                 ymax_ba =  500.0
             else:
@@ -313,6 +334,4 @@ if __name__ == '__main__':
                 pout,
             )
     print('END program')
-#=============================    End of program   ============================  
-
-         
+    # =============================    End of program   ====================

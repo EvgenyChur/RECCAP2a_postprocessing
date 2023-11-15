@@ -30,56 +30,59 @@ import xarray as xr
 
 # 1.2 Personal module
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4pft import ocn_pft
-from libraries.lib4sys_support import makefolder
-from libraries.lib4xarray import comp_area_lat_lon
-from calc.vis_controls import get_figure4lcc
-from settings.path_settings import get_path_in, output_path
+from settings import logical_settings, get_path_in, get_output_path, config, get_ocn_pft
+from libraries import makefolder, comp_area_lat_lon
+from calc import get_figure4lcc
+
 # =============================   Personal functions   ===================
 
-# ================   User settings (have to be adapted)  =================
-# -- Logical parameters:
-# Activate algorithm for visualization?
-lplot = True
-
-# -- Main settings:
-# Research dataset: (OCN):
-datasets = ['OCN_S2Diag']
-# Research domain (Global, Europe, Tropics, NH, Other):
-region = 'Global'
-# Research parameter:
-var = 'burnedArea'
-# First year:
-tstart = '2000-01-01'
-# Last year:
-tstop = '2021-01-01'
-# Time step:
-tstep = '1M'
-# Recalculation coefficient (BA: m2 to 1000 km2):
-rec_coef = 1e-9
-
-# -- Plot settings:
-# Rows and columns numbers for collage plot (nrows*ncols):
-nrows = 3
-ncols = 4
-# Plot titles:
-nplt_mean  = 'Burned area annual MEAN for different OCN PFT'
-nplt_std   = 'Burned area annual STD for different OCN PFT'
-nplt_trend = 'Burned area TREND for different OCN PFT'
-# Settings for subplots (limits and colormap):
-clb_lim = [
-    {'mode' : var, 'param': 'mean' , 'ymin' :  0.0 , 'ymax' : 0.04, 'cbar' : 'hot_r' },
-    {'mode' : var, 'param': 'std'  , 'ymin' :  0.0 , 'ymax' : 0.02, 'cbar' : 'hot_r' },
-    {'mode' : var, 'param': 'trend', 'ymin' : -1e-4, 'ymax' : 1e-4, 'cbar' : 'RdBu_r'},
-]
-
-# -- Get actual PFT names for each PFT:
-title = []
-for vclass in ocn_pft:
-    title.append(vclass['PFT'])
-
-# =============================    Main program   =========================
 if __name__ == '__main__':
+    # ================   User settings (have to be adapted)  =================
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True, lnc_info = False)
+    # -- Load other logical parameters:
+    lplot = True # Activate algorithm for visualization?
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
+    # -- Main settings:
+    # Research dataset: (OCN):
+    datasets = ['OCN_S2Diag']
+    # Research domain (Global, Europe, Tropics, NH, Other):
+    region = 'Europe'
+    # Research parameter:
+    var = 'burnedArea'
+    # First year:
+    tstart = '2000-01-01'
+    # Last year:
+    tstop = '2021-01-01'
+    # Time step:
+    tstep = '1M'
+    # Recalculation coefficient (BA: m2 to 1000 km2):
+    rec_coef = 1e-9
+
+    # -- Plot settings:
+    # Rows and columns numbers for collage plot (nrows*ncols):
+    nrows = 3
+    ncols = 4
+    # Plot titles:
+    nplt_mean  = 'Burned area annual MEAN for different OCN PFT'
+    nplt_std   = 'Burned area annual STD for different OCN PFT'
+    nplt_trend = 'Burned area TREND for different OCN PFT'
+    # Settings for subplots (limits and colormap):
+    clb_lim = [
+        {'mode' : var, 'param': 'mean' , 'ymin' :  0.0 , 'ymax' : 0.04, 'cbar' : 'hot_r' },
+        {'mode' : var, 'param': 'std'  , 'ymin' :  0.0 , 'ymax' : 0.02, 'cbar' : 'hot_r' },
+        {'mode' : var, 'param': 'trend', 'ymin' : -1e-4, 'ymax' : 1e-4, 'cbar' : 'RdBu_r'},
+    ]
+
+    # -- Get actual PFT names for each PFT:
+    ocn_pft = get_ocn_pft(tlm)
+    title = [vclass['PFT'] for vclass in ocn_pft]
+    print(title)
+
+    # =============================    Main program   =========================
     print('START program')
     # Important information:  pin_param - has None values in this script. Due to there
     #                         is no key attribute from attribute_catalog  of mclister.py
@@ -88,9 +91,9 @@ if __name__ == '__main__':
     #                         unused in this script!
 
     # -- Define INPUT and OUTPUT paths with OCN model results and create OUTPUT folder:
-    pin, pin_param = get_path_in(datasets, 'firepft')
+    pin, pin_param = get_path_in(datasets, 'firepft', lsets)
     print(pin)
-    data_OUT = makefolder(output_path().get('ba_ocn_pft'))
+    data_OUT = makefolder(get_output_path(lsets).get('ba_ocn_pft'))
 
     print(f'Your data will be saved at {data_OUT}')
     # -- OUTPUT figures names:

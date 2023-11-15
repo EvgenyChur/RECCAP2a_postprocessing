@@ -34,31 +34,31 @@ import pandas as pd
 import matplotlib.pyplot as plt
 # -- Personal:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.path_settings import output_path
-from libraries.lib4sys_support import makefolder
-from libraries.lib4visualization import simple_line_plot_settings
+from settings import logical_settings, get_output_path
+from libraries import makefolder, simple_line_plot_settings
 # =============================   Personal functions   =================
 
-# =============================   User settings   ======================
-# -- Define output paths and create folder for results
-pout = makefolder(output_path().get('lpjFire_coef'))
-print(f'Your data will be saved at {pout}')
-
-# -- Plot settings for linear plot:
-user_line_settings = {
-    'labels' : ['OCN', 'ART'],
-    'colors' : ['b', 'r'],
-    'styles' : ['-', '-.'],
-    'title'  : 'Test different equations',
-    'xlabel' : 'Annual sum of days with fire conditions',
-    'ylabel' : 'Annual fire fraction values',
-    'xlims'  : [  0.0, 366.0 , 50.0],
-    'ylims'  : [  0.0,   1.01,  0.1],
-    'output' : pout + 'lpj_fire_coef.png',
-}
-
-# =============================    Main program   ======================
 if __name__ == '__main__':
+       # =============================   User settings   ======================
+       lsets = logical_settings(lcluster = True)
+
+       # -- Define output paths and create folder for results
+       pout = makefolder(get_output_path(lsets).get('lpjFire_coef'))
+       print(f'Your data will be saved at {pout}')
+
+       # -- Plot settings for linear plot:
+       user_line_settings = {
+           'labels' : ['OCN', 'ART'],
+           'colors' : ['b', 'r'],
+           'styles' : ['-', '-.'],
+           'title'  : 'Test different equations',
+           'xlabel' : 'Annual sum of days with fire conditions',
+           'ylabel' : 'Annual fire fraction values',
+           'xlims'  : [  0.0, 366.0 , 50.0],
+           'ylims'  : [  0.0,   1.01,  0.1],
+           'output' : pout + 'lpj_fire_coef.png',
+       }
+       # =============================    Main program   ======================
        # -- Calculating values based on different equations:
        s   = np.arange(1, 366, 1) / 365
        xm1 = s - 1

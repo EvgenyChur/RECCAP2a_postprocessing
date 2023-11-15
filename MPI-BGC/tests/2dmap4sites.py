@@ -35,27 +35,31 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 
 # 1.2 Personal modules
-sys.path.append(os.path.join(os.getcwd(), '..')) 
-from settings.user_settings import stations
-from libraries.lib4sys_support import makefolder
-from settings.path_settings import output_path
+sys.path.append(os.path.join(os.getcwd(), '..'))
+from settings import logical_settings, get_settings4stations, get_output_path, config
+from libraries import makefolder
 # =============================   Personal functions   =================
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+
+
 
 # vis_stations --> Create map with random points (stations)
 def vis_stations(
         # Input variables:
         data_OUT:str,            # Output path
         plt_title:str,           # Plot title
+        uconfig:config,          # User class
         # Output variables:
     ):                           # Create figure in output folder
+    #
+    stations = get_settings4stations(uconfig)
+
     # -- Get data for visualization:
-    lats = []
-    lons = []
-    stat = []
-    for i in stations:
-        lats.append(stations.get(i)[0])
-        lons.append(stations.get(i)[1])
-        stat.append(stations.get(i)[2])
+    lats = [stations.get(i)[0] for i in stations]
+    lons = [stations.get(i)[1] for i in stations]
+    stat = [stations.get(i)[2] for i in stations]
+
     # -- Create plot:
     fig = plt.figure(figsize = (12,7))
     ax  = fig.add_subplot(111)
@@ -73,7 +77,7 @@ def vis_stations(
                                         fontsize = 10,
                                         dashes   = [0.3, 2]) 
     # -- Add relief, coastlines and countries:
-    m.shadedrelief(scale = 0.2)
+    #m.shadedrelief(scale = 0.2)
     m.drawcoastlines(linewidth = 0.1)
     m.drawcountries(linewidth  = 0.2, color = 'red', linestyle =  '--' )
     # -- Add labels for stations:
@@ -86,23 +90,30 @@ def vis_stations(
     plt.close(fig)
     plt.gcf().clear()
 
-# =============================   User settings   ================
-# This script uses parameters from other modules. In particularly, you have
-# check:
-#   1. **/settings/user_settings.py** variable station -> if you want to add
-#      or change information about stations, you should change this variable.
-#   2. **/settings/path_settings.py** has information about output data path
-#      if you want to use another path, change it in modules `/settings/mlocal.py` or
-#      `/settings/mcluster.py` function **output_folders**
-output_folder = '2dmap4sites'
-plot_name = 'STATIONS.png'
-plot_title = 'Geolocation of the random points (robinson projection)'
 
-# =============================    Main program   ================
 if __name__ == '__main__':
+    # =============================   User settings   ================
+    # This script uses parameters from other modules. In particularly, you have
+    # check:
+    #   1. **/settings/user_settings.py** variable station -> if you want to add
+    #      or change information about stations, you should change this variable.
+    #   2. **/settings/path_settings.py** has information about output data path
+    #      if you want to use another path, change it in modules `/settings/mlocal.py` or
+    #      `/settings/mcluster.py` function **output_folders**
+    output_folder = '2dmap4sites'
+    plot_name = 'STATIONS.png'
+    plot_title = 'Geolocation of the random points (robinson projection)'
+
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True)
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
+    # =============================    Main program   ================
     # -- Define output paths and create folder for results:
-    data_OUT  = makefolder(output_path().get(output_folder))
+    data_OUT  = makefolder(get_output_path(lsets).get(output_folder))
     print(f'Your data will be saved at {data_OUT}')
 
-    vis_stations(data_OUT + plot_name, plot_title)
+    vis_stations(data_OUT + plot_name, plot_title, tlm)
 # =============================    End of program   ==============

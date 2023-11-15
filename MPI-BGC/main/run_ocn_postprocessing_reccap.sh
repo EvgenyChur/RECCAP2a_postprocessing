@@ -25,7 +25,7 @@
 # into the fire_xarray.py postprocessing system ("Global", "Europe", "Tropics",
 # "NH" and "Other"). I didn't tested "NH" and "Other". If want to add new one -
 # just change "Other" to your personal domain or just add new.
-domain=("Global" "Europe" "Tropics")
+domain=("Global")
 
 # -- Research parameters:
 # At the moment you can use different output parameters of OCN, JULES, ORCHIDEE models
@@ -34,17 +34,16 @@ var=("burned_area" "cVeg" "npp" "gpp" "lai" "nee" "nbp" "fFire")
 #var=("burned_area") #"cVeg" "npp" "gpp" "lai" "nee" "nbp" "fFire")
 
 # -- Counters (start from 0):
-dcount=2 # domain count
+dcount=0 # domain count
 vcount=7 # var count
 
 # -- Parameters for output folder (define only name of output folder):
-year_start=2003 # first year
-year_stop=2020  # last year
-nlines=5        # numbers of line
+year_start=1980 # first year
+year_stop=2010  # last year
 
 # -- Output path for the results folder:
 pOUT=../scratch/evchur/RESULTS
-fout=${pOUT}/MAIN_${year_start}_${year_stop}_${nlines}lines_24
+fout=${pOUT}/RECCAP2_${year_start}_${year_stop}
 
 # ============================= Main part ==================================
 # -- Cycle over domains:
@@ -54,16 +53,14 @@ do
     for (( j=0; j<=vcount ; j++ ));
     do
         # -- Run main python script for data postprocessing:
-        python3 ./fire_xarray.py ${year_start} ${year_stop} ${domain[${i}]} ${var[${j}]}
+        python3 ./fire_xarray_RECCAP2A_domains.py ${year_start} ${year_stop} ${domain[${i}]} ${var[${j}]}
     done
 done
-
 # -- Create output folder:
 if [[ ! -e $pout_ndep ]]; then
     echo "Creating output folders:"
     mkdir ${fout}
 fi
-
 # -- Move folders with parameters results to the new one:
 for (( j=0; j<=vcount ; j++ ));
 do

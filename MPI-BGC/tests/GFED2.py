@@ -28,21 +28,20 @@ import warnings
 warnings.filterwarnings("ignore")
 # -- Personal:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4xarray import comp_area_lat_lon
-import libraries.lib4upscaling_support as lib4ups
+from libraries import comp_area_lat_lon, get_upscaling_ba
 # =============================   Personal functions   ==================
-
-# ================   User settings (have to be adapted)  ================
-# Input paths:
-mpath = 'C:/Users/evchur/Desktop'
-gfed_path = mpath + '/GFED_annual_burned_area_2002-2020_025d.nc'
-# Research parameter:
-lparam = 'burned_area'
-# Recalculation coefficient:
-rec_coef = 1e-9
 
 # =============================    Main program   =======================
 if __name__ == '__main__':
+    # ================   User settings (have to be adapted)  ================
+    # Input paths:
+    mpath = 'C:/Users/evchur/Desktop'
+    gfed_path = mpath + '/GFED_annual_burned_area_2002-2020_025d.nc'
+    # Research parameter:
+    lparam = 'burned_area'
+    # Recalculation coefficient:
+    rec_coef = 1e-9
+
     # -- Open NetCDF:
     ncfile = xr.open_dataset(gfed_path)
     # -- Add area field:
@@ -54,7 +53,7 @@ if __name__ == '__main__':
     # -- Units convertation:
     ncfile[lparam] = (ncfile[lparam] * ncfile['area'] * rec_coef)
     # -- Re-interpolation:
-    gfed_ba = lib4ups.get_upscaling_ba(ncfile, lparam, lreport = True)
+    gfed_ba = get_upscaling_ba(ncfile, lparam, lreport = True)
 # =============================    End of program   =====================
 
 

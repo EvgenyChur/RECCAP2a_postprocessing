@@ -31,7 +31,7 @@ import xarray as xr
 import pandas as pd
 # -- Personal:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4xarray   import comp_area_lat_lon
+from libraries import comp_area_lat_lon
 #=============================   Personal functions   =========================
 
 # onep_nc --> Open NetCDF file and add new field area to the data.
@@ -57,23 +57,21 @@ def open_nc(
 def frac_info(ds1:xr.Dataset, ds2:xr.Dataset, var:str):
     return (ds1[var] * ds2.area).sum({'lat','lon'}).data[0]
 
-# =============================   User settings   ======================
-# Do you want to use cluster (True / False) ?
-lcluster = True
-# -- Input data:
-if lcluster == True:
-    main = '../scratch/evchur/OCN/DATA4ctr_interpolation'                       # This path was changed because of security reasons
-else:
-    main = 'C:/Users/evchur/Desktop/DATA/TESTS'
-exp_s21_1d  = main + '/selectedeu_s2.1_s2.2grid.nc'
-exp_S22_1d  = main + '/selectedeu_S2.2.nc'
-exp_s21_05d = main + '/selectedeu_S2.1_05deg.nc'
-# -- Time limits:
-time_set = ['1950-01-01', '2022-01-01', '1960', '2020']
-# -- Research parameter:
-var = 'burnedArea'
-# =============================    Main program   ======================
+
 if __name__ == '__main__':
+    # =============================   User settings   ======================
+    # Do you want to use cluster (True / False) ?
+    lcluster = True
+    # -- Input data:
+    main = '../scratch/evchur/OCN/DATA4ctr_interpolation' if lcluster else 'C:/Users/evchur/Desktop/DATA/TESTS'
+    # =============================    Main program   ======================
+    exp_s21_1d  = main + '/selectedeu_s2.1_s2.2grid.nc'
+    exp_S22_1d  = main + '/selectedeu_S2.2.nc'
+    exp_s21_05d = main + '/selectedeu_S2.1_05deg.nc'
+    # -- Time limits:
+    time_set = ['1950-01-01', '2022-01-01', '1960', '2020']
+    # -- Research parameter:
+    var = 'burnedArea'
     # -- Experiment S2.1 - grid resolution 1.0 deg:
     s21_1d  = open_nc(exp_s21_1d , time_set)
     # -- Experiment S2.2 - grid resolution 1.0 deg:

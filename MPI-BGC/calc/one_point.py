@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+__all__ = [
+    'one_point_calc',
+]
 """
 Script for analysis and visualization data, presented as a point (station)
 
@@ -28,12 +31,13 @@ import sys
 import numpy as np
 import pandas as pd
 import xarray as xr
+from typing import Optional
 # -- Personal modules:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.user_settings import stations, plt_limits_point
-from calc.vis_controls import one_linear_plot, box_plot
-from libraries.lib4sys_support import makefolder
-from libraries.lib4visualization import vis_stations
+from settings import get_settings4stations, get_limits4station_plots, config
+from vis_controls import one_linear_plot, box_plot
+from libraries import makefolder, vis_stations
+
 
 # =============================   Personal functions   ====================
 
@@ -48,6 +52,8 @@ def one_point_calc(
         svar_name:str,                 # Short name of the research parameter
         data_OUT:str,                  # Output path
         region:str,                    # Research region
+        uconfig:config,                # User class with settings
+        tstart:Optional[int] = 1980,   # First year of the research period
         # OUTPUT variables:
     ) -> pd.DataFrame:                 # Statistical data for all stations
     # -- Local variables:
@@ -60,17 +66,17 @@ def one_point_calc(
     csv_output = 'Stat4points' # Name of output for table with statistical data
 
     g2kg = 1000 # gramm in 1 kg
-
+    # -- Load user stations:
+    stations = get_settings4stations(uconfig)
+    plt_limits_point = get_limits4station_plots(tstart, uconfig)
     # -- Create output folder:
     data_OUT = makefolder(data_OUT + fn_output)
 
     # -- Get data for stations and create figures:
     for i in range(len(stations)):
         # -- Get coordinates for each point:
-        lats      = stations.get(i + 1)[0]
-        lons      = stations.get(i + 1)[1]
-        name4plot = stations.get(i + 1)[2]
-        pft4plot  = stations.get(i + 1)[3]
+        lats, lons = stations.get(i + 1)[0], stations.get(i + 1)[1]
+        name4plot, pft4plot = stations.get(i + 1)[2], stations.get(i + 1)[3]
         # -- Get data for each station:
         lst4points = []
         for j in range(len(lst4ds_names)):
@@ -88,9 +94,10 @@ def one_point_calc(
                 lst4points.append(point_data)
 
         # -- Get data for statistical metrics and save them into .csv tables:
-        stat_data = []
-        for j in range(len(lst4ds_names)):
-            stat_data.append(pd.Series(lst4points[j].data, name = lst4ds_names[j]))
+        stat_data = [
+            pd.Series(lst4points[j].data, name = lst4ds_names[j])
+            for j in range(len(lst4ds_names))]
+
         df_stat_data = pd.concat(stat_data, axis = 1)
         # Get standard statistical parameters based on describe method:
         general_stat = df_stat_data.describe()
@@ -123,13 +130,13 @@ def one_point_calc(
 
         # -- User settings for boxplots and line plots:
         user_plt_settings = {
-            'title'           : (f'Annual values of {lvar_name} for one point '
-                                 f'(lat = {point_data[0].lat.values},'
-                                 f' lon = {point_data[0].lon.values}) \n {pft4plot}'),
-            'ylabel'          : f'{svar_name}, {var_units}',
-            'output_name'     : f'{var}_station_{name4plot}.png',
+            'title' : (f'Annual values of {lvar_name} for one point '
+                f'(lat = {point_data[0].lat.values},'
+                f' lon = {point_data[0].lon.values}) \n {pft4plot}'),
+            'ylabel' : f'{svar_name}, {var_units}',
+            'output_name' : f'{var}_station_{name4plot}.png',
             'output_name_bxp' : f'boxplot_{var}_station_{name4plot}.png',
-            'legend_pos'      : 'upper left',
+            'legend_pos' : 'upper left',
         }
         # Define limits for y axis (min, max, step)
         ymin  = plt_limits_point.get(var)[0]
@@ -173,6 +180,8 @@ def one_point_calc(
             lst4points,
             user_plt_settings,
             data_OUT,
+            uconfig,
+            tstart = tstart,
             point_mode = True,
             ymin = ymin,
             ymax = ymax,
@@ -188,6 +197,6 @@ def one_point_calc(
             ystep,
         )
         # Plot 3: 2D Map with station location
-        vis_stations(data_OUT)
+        vis_stations(data_OUT, uconfig)
 
     return df_stat_data

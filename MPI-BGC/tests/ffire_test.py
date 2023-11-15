@@ -26,62 +26,65 @@ import sys
 import xarray as xr
 # -- Personal:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.path_settings import get_path_in, output_path
-from libraries.lib4xarray import comp_area_lat_lon
-from libraries.lib4sys_support import makefolder
-from libraries.lib4upscaling_support import get_upscaling_ba
-from libraries.lib4visualization import create_fast_xarray_plot as xrplot
-from libraries.lib4visualization import netcdf_line_plots as nlplot
-from libraries.lib4visualization import simple_line_plot_settings
+from settings import logical_settings, get_path_in, get_output_path, config
+from libraries import comp_area_lat_lon, makefolder, get_upscaling_ba
+from libraries import create_fast_xarray_plot as xrplot
+from libraries import netcdf_line_plots as nlplot
+from libraries import simple_line_plot_settings
 # ========================   Personal functions   =======================
 
-# =============================   User settings   ======================
-
-# -- Define and create output folder :
-pout = makefolder(output_path().get('ffire_test'))
-print(f'Your data will be saved at {pout}')
-# -- Plot settings for linear plot:
-user_line_settings = {
-    'labels' : ['GFED4.1s_720-1440', 'GFED4.1s_360-720'],
-    'colors' : ['b', 'r'],
-    'styles' : ['-', '-.'],
-    'title'  : 'test_fFire',
-    'xlabel' : 'years',
-    'ylabel' : 'fFire',
-    'xlims'  : [ 2000, 2017, 2  ],
-    'ylims'  : [  0.0, 8.01, 2.0],
-    'output' : pout + 'annual_fFire.png',
-}
-
-# -- Plot settings for 2D maps:
-user_map_settings = {
-    'fFire_orig' : {
-        'robust'   : True,
-        'colormap' : 'hot_r',
-        'vmin'     :  0.0,
-        'vmax'     : 80.0,
-        'col'      : None,
-        'col_wrap' : None,
-        'title'    : 'fFire before upscalling',
-        'output'   : pout + 'fFire_720_1440.png',
-    },
-    'fFire_new' :{
-        'robust'   : True,
-        'colormap' : 'hot_r',
-        'vmin'     :  0.0,
-        'vmax'     : 80.0,
-        'col'      : None,
-        'col_wrap' : None,
-        'title'    : 'fFire after upscalling',
-        'output'   : pout + 'fFire_360_720.png',
-    },
-}
-# Recalculation coefficients:
-g2pg = 1e-15
-# =============================    Main program   ======================
 if __name__ == '__main__':
+    # =============================   User settings   ======================
+    # -- Load basic logical parameteres:
+    lsets = logical_settings(lcluster = True)
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
+    # -- Define and create output folder :
+    pout = makefolder(get_output_path(lsets).get('ffire_test'))
+    print(f'Your data will be saved at {pout}')
+    # -- Plot settings for linear plot:
+    user_line_settings = {
+        'labels' : ['GFED4.1s_720-1440', 'GFED4.1s_360-720'],
+        'colors' : ['b', 'r'],
+        'styles' : ['-', '-.'],
+        'title'  : 'test_fFire',
+        'xlabel' : 'years',
+        'ylabel' : 'fFire',
+        'xlims'  : [ 2000, 2017, 2  ],
+        'ylims'  : [  0.0, 8.01, 2.0],
+        'output' : pout + 'annual_fFire.png',
+    }
+
+    # -- Plot settings for 2D maps:
+    user_map_settings = {
+        'fFire_orig' : {
+            'robust'   : True,
+            'colormap' : 'hot_r',
+            'vmin'     :  0.0,
+            'vmax'     : 80.0,
+            'col'      : None,
+            'col_wrap' : None,
+            'title'    : 'fFire before upscalling',
+            'output'   : pout + 'fFire_720_1440.png',
+        },
+        'fFire_new' :{
+            'robust'   : True,
+            'colormap' : 'hot_r',
+            'vmin'     :  0.0,
+            'vmax'     : 80.0,
+            'col'      : None,
+            'col_wrap' : None,
+            'title'    : 'fFire after upscalling',
+            'output'   : pout + 'fFire_360_720.png',
+        },
+    }
+    # Recalculation coefficients:
+    g2pg = 1e-15
     # -- Define input and output paths a
-    pin, res_param  = get_path_in(['GFED4.1s'], 'fFire')
+    pin, res_param  = get_path_in(['GFED4.1s'], 'fFire',lsets)
+    # =============================    Main program   ======================
     # -- Reading data:
     ncfile = xr.open_dataset(pin[0])
     # -- Rename attribute:

@@ -34,7 +34,7 @@ import pandas as pd
 import xarray as xr
 # -- Personal:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.user_settings import logical_settings
+from settings import logical_settings
 # =============================   Personal functions   ==================
 
 # get_ocn -->
@@ -56,63 +56,67 @@ def get_ocn(
     else:
         return ncfile[var][tstep,:,:]
         
-# =============================   User settings   =======================
 
-# Do you want to calculate on cluster?
-lcluster = logical_settings[0]
-# Current user:
-user = 'evchur'
-# Time step (36 is equal to 2003-01-01):
-tstep = 36
-# Data type -> 'orig' or 'exp':
-dtype = 'orig'
-
-# Define output paths:
-if lcluster is True:
-    main = 'Net/Groups/BGI'
-    scratch      = main + f'/scratch/{user}/OCN/RUNDIR/RECCAP2A_v1_rev294_FIRE'
-    people_step2 = main + f'/people/{user}/Models/OCN/results/RECCAP2A_v1_rev294_FIRE/MAPS'
-    people_step3 = main + f'/people/{user}/Models/OCN/results/Deliver/2022-10-21'
-    # -- Original OCN values:
-    if dtype == 'orig':
-        paths = [
-            scratch      + '/S2Diag_orig/Out/553/mFIREFRAC_2000-2010.nc',       # direct OCN output
-            people_step2 + '/S2Diag_orig/mFIREFRAC_2000-2010_S2Diag.nc',        # OCN output postprocessing (f90)
-            people_step3 + '/OCN_S2Diag_orig_firepft.nc',                       # OCN trendy output (data after trendy output)
-        ]
-        fst_yr = '2000-01-01'
-        lst_yr = '2011-01-01'
-    # -- Experiment OCN values (OCN_v202302):
-    else:
-        paths = [
-            scratch      + '/S2Diag/Out/553/mFIREFRAC_2000-2020.nc',
-            people_step2 + '/S2Diag/mFIREFRAC_2000-2020_S2Diag.nc',
-            people_step3 + '/OCN_S2Diag_firepft.nc',
-        ]
-        fst_yr = '2000-01-01'
-        lst_yr = '2021-01-01'
-# Working with local computer copy of data:
-else:
-    main = f'C:/Users/{user}/Desktop/DATA'
-    # -- Original OCN values:
-    if dtype == 'orig':
-        paths  = [
-            main + '/OCN_ORIG/mFIREFRAC_2000-2010.nc',                          # Direct OCN output
-            main + '/OCN_ORIG/mFIREFRAC_2000-2010_S2Diag.nc',                   # OCN output postprocessing (f90)
-            main + '/OCN_ORIG/OCN_S2Diag_firepft.nc',                           # OCN trendy output (data after trendy output)
-        ]
-        fst_yr = '2000-01-01'
-        lst_yr = '2011-01-01'
-    else:
-        # -- Experiment OCN values:
-        paths  = [main + '/OCN_TEST/mFIREFRAC_2000-2020.nc',
-                  main + '/OCN_TEST/mFIREFRAC_2000-2020_S2Diag.nc',
-                  main + '/OCN_TEST/OCN_S2Diag_firepft.nc'        ]
-        fst_yr = '2000-01-01'
-        lst_yr = '2021-01-01'
 
 # =============================    Main program   ======================
 if __name__ == '__main__':
+
+    # =============================   User settings   =======================
+    # Do you want to calculate on cluster?
+    lcluster = logical_settings(lcluster = True).get('lcluster')
+    # Current user:
+    user = 'evchur'
+    # Time step (36 is equal to 2003-01-01):
+    tstep = 36
+    # Data type -> 'orig' or 'exp':
+    dtype = 'exp'
+
+    # Define output paths:
+    if lcluster:
+        main = '..'
+        scratch      = main + f'/scratch/{user}/OCN/RUNDIR/RECCAP2A_v4_rev294'
+        people_step2 = main + f'/people/{user}/Models/OCN/results/RECCAP2A_v4_rev294/MAPS'
+        people_step3 = main + f'/work_1/RECCAP2/RECCAP2A/v202309/OCN/S2Diag'
+
+        # -- Original OCN values:
+        if dtype == 'orig':
+            paths = [
+                scratch      + '/S2Diag_orig/Out/553/mFIREFRAC_2000-2010.nc',       # direct OCN output
+                people_step2 + '/S2Diag_orig/mFIREFRAC_2000-2010_S2Diag.nc',        # OCN output postprocessing (f90)
+                people_step3 + '/OCN_S2Diag_orig_firepft.nc',                       # OCN trendy output (data after trendy output)
+            ]
+            fst_yr = '2000-01-01'
+            lst_yr = '2011-01-01'
+        # -- Experiment OCN values (OCN_v202302):
+        else:
+            paths = [
+                scratch      + '/S2Diag/Out/553/mFIREFRAC_2003-2020.nc',
+                people_step2 + '/S2Diag/mFIREFRAC_2003-2020_S2Diag.nc',
+                people_step3 + '/OCN_S2Diag_firepft.nc',
+            ]
+            fst_yr = '2000-01-01'
+            lst_yr = '2021-01-01'
+    # Working with local computer copy of data:
+    else:
+        main = f'C:/Users/{user}/Desktop/DATA'
+        # -- Original OCN values:
+        if dtype == 'orig':
+            paths  = [
+                main + '/OCN_ORIG/mFIREFRAC_2000-2010.nc',                          # Direct OCN output
+                main + '/OCN_ORIG/mFIREFRAC_2000-2010_S2Diag.nc',                   # OCN output postprocessing (f90)
+                main + '/OCN_ORIG/OCN_S2Diag_firepft.nc',                           # OCN trendy output (data after trendy output)
+            ]
+            fst_yr = '2000-01-01'
+            lst_yr = '2011-01-01'
+        else:
+            # -- Experiment OCN values:
+            paths  = [main + '/OCN_TEST/mFIREFRAC_2000-2020.nc',
+                      main + '/OCN_TEST/mFIREFRAC_2000-2020_S2Diag.nc',
+                      main + '/OCN_TEST/OCN_S2Diag_firepft.nc'        ]
+            fst_yr = '2000-01-01'
+            lst_yr = '2021-01-01'
+
+
     # -- Get data (Step 1, step 2, step 3):
     tbaf        = get_ocn(paths[0], 'FIREFRAC', tstep, fst_yr, lst_yr, dtype).sum(dim = {'PFT'}).data
     tbaf_s2Diag = get_ocn(paths[1], 'FIREFRAC', tstep, fst_yr, lst_yr, dtype)

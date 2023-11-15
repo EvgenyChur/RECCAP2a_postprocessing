@@ -22,13 +22,11 @@ import pandas as pd
 import xarray as xr
 # -- Personal:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4xarray import comp_area_lat_lon
-from libraries.lib4sys_support import makefolder
-from libraries.lib4upscaling_support import get_upscaling_ba, get_upscaling_ba_veg_class
-from calc.vis_controls import one_plot
-from settings.path_settings import get_path_in, output_path
-from libraries.lib4visualization import netcdf_line_plots as nlplot
-from libraries.lib4visualization import simple_line_plot_settings
+from settings import logical_settings, get_path_in, get_output_path, config
+from calc import one_plot
+from libraries import comp_area_lat_lon, makefolder, get_upscaling_ba, get_upscaling_ba_veg_class
+from libraries import netcdf_line_plots as nlplot
+from libraries import simple_line_plot_settings
 
 # =============================   Personal functions   =================
 
@@ -46,88 +44,93 @@ def get_ocn(
                xr.DataArray]:    # Original OCN data
 
     nc = (xr.open_dataset(path, decode_times = False)
-            .assign_coords({'time': pd.date_range('2000-01-01', '2021-01-01',
-                                                              freq = '1M'  )}))   
+            .assign_coords({'time': pd.date_range(
+                '2000-01-01', '2021-01-01', freq = '1M'  )}))
     # Add field with pixel area: 
-    nc = nc.assign(xr.Dataset({'area': (('lat', 'lon'),                         
-                      comp_area_lat_lon(nc.lat.values,
-                                        nc.lon.values))}, 
-                      coords = {'lat' : nc.lat.values, 
-                                'lon' : nc.lon.values})) 
-    # Data from TRENDY    
-    nc[var] = nc[var].sum(dim = {'vegtype'})                                   
+    nc = nc.assign(xr.Dataset({'area': (('lat', 'lon'),
+                      comp_area_lat_lon(nc.lat.values, nc.lon.values))},
+                      coords = {'lat' : nc.lat.values, 'lon' : nc.lon.values}))
+    # Data from TRENDY:
+    nc[var] = nc[var].sum(dim = {'vegtype'})
     nc[var] = nc[var] * nc['area'] * rec_coef * nc[var].time.dt.days_in_month
 
     tba_ocn   = yearsum(nc[var]) 
     orig_data = nc[var]
     return tba_ocn, orig_data
 
-# =============================   User settings   ======================
-# -- Logical parameteres:
-# Do you want to create plot for comparison burned area?
-lplot_1 = True
-# Do you want to create plot for comparison burned area by PFT?
-lplot_2 = True
-# Do you want to create plot for comparison burned area and burned area by PFT?
-lplot_3 = True
 
-# -- Get output paths and create folder for results:
-pout = makefolder(output_path().get('fast_test'))
-print(f'Your data will be saved at {pout}')
-
-# -- Define user settings for linear plots:
-user_line_settings = {
-    'plot_1' : {
-        'labels' : ['BA - 720*1440', 'BA - 360*720'],
-        'colors' : ['b', 'r'],
-        'styles' : ['-', '-.'],
-        'title'  : 'Comparison BA ESA-CCI MODIS data',
-        'xlabel' : 'Years',
-        'ylabel' : 'Burned area 1000 km2',
-        'xlims'  : [ 2000, 2021  , 2  ],
-        'ylims'  : [ 2000, 6000.1, 500],
-        'output' : pout + 'BA.png',
-    },
-    'plot_2' : {
-        'labels' : ['BA_PFT_all - 720*1440', 'BA_PFT_all - 360*720', 'BA_PFT_nat - 360*720', 'BA_OCN - 360*720'],
-        'colors' : ['b', 'r' , 'g' , 'm' ],
-        'styles' : ['-', '-.', '-.', '--'],
-        'title'  : 'Comparison BA ESA-CCI MODIS data by PFT',
-        'xlabel' : 'Years',
-        'ylabel' : 'Burned area 1000 km2',
-        'xlims'  : [ 2000, 2021  , 2  ],
-        'ylims'  : [ 2000, 6000.1, 500],
-        'output' : pout + 'BA_PFT.png',
-    },
-    'plot_3' : {
-        'labels' : ['BA', 'BA_PFT'],
-        'colors' : ['b', 'r'],
-        'styles' : ['-', '-.'],
-        'title'  : 'Comparison BA and BA_PFT ESA-CCI MODIS data',
-        'xlabel' : 'Years',
-        'ylabel' : 'Burned area 1000 km2',
-        'xlims'  : [ 2000, 2021  , 2  ],
-        'ylims'  : [ 2000, 6000.1, 500],
-        'output' : pout + 'BA2BA_PFT.png',
-    },
-}
-# -- Recalculation coefficient:
-rec_coef = 1e-9
-# -- Don't change this parameters:
-esa_var1 = 'burned_area'
-esa_var2 = 'burned_area_in_vegetation_class'
-esa_pft_var = 'vegetation_class'
-# -- User time limit for global maps (should be simular for ESA-CCI MODIS and OCN)
-year_start = '2002-01-01'
-year_stop  = '2016-01-01'
-# -- Natura PFT starts from ... (index ESA-CCI MODIS PFTs):
-natur_pft = 3
-# =============================    Main program   =======================
 if __name__ == '__main__':
+    # =============================   User settings   ======================
+    # -- Load basic logical parameteres:
+    lsets = logical_settings(lcluster = True)
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
+    # Do you want to create plot for comparison burned area?
+    lplot_1 = True
+    # Do you want to create plot for comparison burned area by PFT?
+    lplot_2 = True
+    # Do you want to create plot for comparison burned area and burned area by PFT?
+    lplot_3 = True
+
+    # -- Get output paths and create folder for results:
+    pout = makefolder(get_output_path(lsets).get('fast_test'))
+    print(f'Your data will be saved at {pout}')
+
+    # -- Define user settings for linear plots:
+    user_line_settings = {
+        'plot_1' : {
+            'labels' : ['BA - 720*1440', 'BA - 360*720'],
+            'colors' : ['b', 'r'],
+            'styles' : ['-', '-.'],
+            'title'  : 'Comparison BA ESA-CCI MODIS data',
+            'xlabel' : 'Years',
+            'ylabel' : 'Burned area 1000 km2',
+            'xlims'  : [ 2000, 2021  , 2  ],
+            'ylims'  : [ 2000, 6000.1, 500],
+            'output' : pout + 'BA.png',
+        },
+        'plot_2' : {
+            'labels' : ['BA_PFT_all - 720*1440', 'BA_PFT_all - 360*720', 'BA_PFT_nat - 360*720', 'BA_OCN - 360*720'],
+            'colors' : ['b', 'r' , 'g' , 'm' ],
+            'styles' : ['-', '-.', '-.', '--'],
+            'title'  : 'Comparison BA ESA-CCI MODIS data by PFT',
+            'xlabel' : 'Years',
+            'ylabel' : 'Burned area 1000 km2',
+            'xlims'  : [ 2000, 2021  , 2  ],
+            'ylims'  : [ 2000, 6000.1, 500],
+            'output' : pout + 'BA_PFT.png',
+        },
+        'plot_3' : {
+            'labels' : ['BA', 'BA_PFT'],
+            'colors' : ['b', 'r'],
+            'styles' : ['-', '-.'],
+            'title'  : 'Comparison BA and BA_PFT ESA-CCI MODIS data',
+            'xlabel' : 'Years',
+            'ylabel' : 'Burned area 1000 km2',
+            'xlims'  : [ 2000, 2021  , 2  ],
+            'ylims'  : [ 2000, 6000.1, 500],
+            'output' : pout + 'BA2BA_PFT.png',
+        },
+    }
+    # -- Recalculation coefficient:
+    rec_coef = 1e-9
+    # -- Don't change this parameters:
+    esa_var1 = 'burned_area'
+    esa_var2 = 'burned_area_in_vegetation_class'
+    esa_pft_var = 'vegetation_class'
+    # -- User time limit for global maps (should be simular for ESA-CCI MODIS and OCN)
+    year_start = '2002-01-01'
+    year_stop  = '2016-01-01'
+    # -- Natura PFT starts from ... (index ESA-CCI MODIS PFTs):
+    natur_pft = 3
+
+    # =============================    Main program   =======================
     print('START program')
     # -- Get input:
-    esa_pin, esa_param = get_path_in(['BA_MODIS'], esa_var1)
-    ocn_pin, ocn_param = get_path_in(['OCN_S2Diag'], 'firepft')
+    esa_pin, esa_param = get_path_in(['BA_MODIS'], esa_var1, lsets)
+    ocn_pin, ocn_param = get_path_in(['OCN_S2Diag'], 'firepft', lsets)
 
     # -- Reading ESA-CCI data:
     ncfile = xr.open_dataset(esa_pin[0])
@@ -236,6 +239,7 @@ if __name__ == '__main__':
             esa_var1,
             m_title,
             m_path_OUT,
+            tlm,
         )
     # -- Comparison burned area and burned area by PFT values:
     if lplot_3 is True:

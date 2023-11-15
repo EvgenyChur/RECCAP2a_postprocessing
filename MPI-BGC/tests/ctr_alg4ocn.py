@@ -66,7 +66,7 @@ if lcal_point is True:
     fire_BA = 0.5
 
 # -- Settings for 2D arrays:
-if lcal_2D is True:
+if lcal_2D:
     # -- Get OCN data (from log files):
     veget_max = oda.get_veget_max()
     m_tbaf, m_days, x_ocn, d_tbaf = oda.ocn_data()
@@ -76,7 +76,7 @@ if lcal_2D is True:
 # =============================    Main program   =======================
 if __name__ == '__main__':
     # -- Test calculations of burned area fraction for station:
-    if lcal_point is True:
+    if lcal_point:
         # -- Quality control of veget_max data. should be <= 1:
         if np.round(veget_max.sum(),2) <= 1.0:
             print('veget_max values:', np.round(veget_max.sum(),2), '\n')
@@ -137,8 +137,8 @@ if __name__ == '__main__':
         for j in range(len(x_scale)):
             if x_scale[j] != x_ocn[j]:
                 print(f'Coefficients are different at {j} step:',
-                      f'Python X values = {x_scale[j]}'         ,
-                      f'OCN X values = {x_ocn[j]}'              )
+                      f'Python X values = {x_scale[j]}',
+                      f'OCN X values = {x_ocn[j]}')
                 sys.exit()
         print('X_scale coefficients were checked. Everything is good. There are no',
               'differences in X_scale coefficient between PYTHON and OCN values \n')
@@ -150,9 +150,9 @@ if __name__ == '__main__':
         # Quality control:
         for j in range(len(ffire_pyt)):
             if ffire_pyt[j] != ffire_ocn[j]:
-                print(f'Fire fractions are different at {j} step:'   ,
-                      f'Python fire_fraction = {ffire_pyt[j]}'       ,
-                      f'OCN fire_fraction = {ffire_ocn[j]}'          )
+                print(f'Fire fractions are different at {j} step:',
+                      f'Python fire_fraction = {ffire_pyt[j]}',
+                      f'OCN fire_fraction = {ffire_ocn[j]}')
                 sys.exit()
         print(
             'Burned fractions were checked. Everything is good. There are no ',

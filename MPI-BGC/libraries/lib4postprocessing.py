@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-
+__all__ = [
+    'ba_postprocessing',
+]
 """
 Module with postprocessing functions for work with burned area data.
 
@@ -42,27 +44,32 @@ Version    Date       Name
 import pandas as pd
 import xarray as xr
 from typing import Optional
+import warnings
+warnings.filterwarnings("ignore")
 # =============================   Personal functions   ====================
+def ba_postprocessing(pin:str, pout:str, nvar:str, npft:str, mode:str,
+    frs_yr: Optional[str] = None, lst_yr: Optional[str] = None,
+    steps: Optional[str] = None ) -> xr.Dataset:
+    """Reading NetCDF data using one of 2 available algorithms and changing burned
+         area data: a) OCN - get total burned area; b) ESA-CCI MODIS -> get total
+         burned area over natural PFT. Save new dataset in new NetCDF file:
 
-# ba_postprocessing --> Reading NetCDF data using one of 2 available algorithms and
-#                       changing burned area data:
-#                       a) OCN - get total burned area;
-#                       b) ESA-CCI MODIS -> get total burned area over natural PFT.
-#                       Save new dataset in new NetCDF file:
-def ba_postprocessing(
-    # Input variables:
-    pin:str,                           # Input path
-    pout:str,                          # Output path
-    nvar:str,                          # Name of the research attribute in NetCDF
-    npft:str,                          # Name of the PFT attribute in NetCDF
-    mode:str,                          # Type of data for analysis (OCN or ESA-CCI MODIS)
-    frs_yr: Optional[str] = None,      # First year of the research period. Default is None
-    lst_yr: Optional[str] = None,      # Last year of the research period. Default is None
-    steps: Optional[str] = None        # Time step. The default is None
-    # OUTPUT variables:
-    ) -> xr.Dataset:                   # Dataset with corrected data. Also, the same
-                                       # file was saved in NetCDF format for further manipulations.
+    **Input variables:**
 
+        pin - Input path
+        pout - Output path
+        nvar - Name of the research attribute in NetCDF
+        npft - Name of the PFT attribute in NetCDF
+        mode - Type of data for analysis (OCN or ESA-CCI MODIS)
+        frs_yr - First year of the research period. Default is None
+        lst_yr - Last year of the research period. Default is None
+        steps - Time step. The default is None
+
+    Output variables:
+
+        dataset - Dataset with corrected data. Also, the same file was saved in
+                  NetCDF format for further manipulations.
+    """
     # -- Open dataset and change original values to the new one
     if mode == 'OCN':
         ds = (xr.open_dataset(pin, decode_times = False)

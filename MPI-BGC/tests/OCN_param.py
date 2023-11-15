@@ -27,64 +27,81 @@ import sys
 import xarray as xr
 # 1.2 Personal modules
 sys.path.append(os.path.join(os.getcwd(),'..'))
-from settings.path_settings import get_parameters, get_path_in, output_path
-from libraries.lib4sys_support import makefolder
-from calc.vis_controls import one_linear_plot
+from settings import logical_settings, get_parameters, get_path_in, get_output_path, config
+from libraries import makefolder
 from libraries import lib4xarray as xrlib
-# =============================   User settings   =====================
+from calc import one_linear_plot
 
-# Use MODIS natural PFT or all (yes - True, no - False)
-lmodis_nat = True
 
-# Research region ('Global', 'Europe', 'Tropics', 'NH')
-region  = 'Global'
-# Research parameter
-param_var = 'burned_area'
-# Research datasets (OCN simulations + other datasets):
-#lst4dsnames =  ['OCN_S2.1', 'OCN_S3.1', 'OCN_S2.1_nf', 'OCN_S3.1_nf' ]
-#lst4dsnames =  ['OCN_S2Prog', 'OCN_S2Diag', 'JULES']
-lst4dsnames = ['OCN_S2Prog', 'OCN_S2Diag']
-
-# -- Get output path and create output folder for results:
-pout   = makefolder(output_path().get('OCN_param')) 
-print(f'Your data will be saved at {pout}')
-
-# -- Settings for plot:
-# Get plot lables info from NetCDF 
-svname, lvname, lp_units, cp_units = get_parameters(lst4dsnames, param_var)
-user_plt_settings = {
-    'title'       : f'{lvname} over {region} region ',
-    'ylabel'      : f'{svname}, {lp_units}',
-    'output_name' : f'{svname}_{region}.png',
-    'legend_pos'  : 'upper left',
-}
-# -- Time limits for JULES. OCN time limits you can set in /settings/user_settings.py
-year_start = '2003'
-year_stop = '2020'
-# =============================    Main program   =======================
 if __name__ == '__main__':
+    # =============================   User settings   =====================
+    # -- Time limits for JULES. OCN time limits you can set in /settings/user_settings.py
+    year_start = '2003'
+    year_stop = '2020'
+
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True)
+    # Use MODIS natural PFT or all (yes - True, no - False)
+    lmodis_nat = True
+
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class(
+        ocn = [int(year_start), int(year_stop)],
+        jul = [int(year_start), int(year_stop)],
+    )
+    tlm = bcc.user_settings()
+
+    # -- Research region ('Global', 'Europe', 'Tropics', 'NH'):
+    region  = 'Global'
+    # -- Research parameter:
+    param_var = 'burned_area'
+    # -- Recalculation coefficient:
+    rec_coef = 1e-9
+
+    # -- Research datasets (OCN simulations + other datasets):
+    #lst4dsnames =  ['OCN_S2.1', 'OCN_S3.1', 'OCN_S2.1_nf', 'OCN_S3.1_nf' ]
+    #lst4dsnames =  ['OCN_S2Prog', 'OCN_S2Diag', 'JULES']
+    lst4dsnames = ['OCN_S2Prog', 'OCN_S2Diag']
+
+    # -- Get output path and create output folder for results:
+    pout   = makefolder(get_output_path(lsets).get('OCN_param'))
+    print(f'Your data will be saved at {pout}')
+
+    # -- Settings for plot:
+    # Get plot lables info from NetCDF
+    svname, lvname, lp_units, cp_units = get_parameters(lst4dsnames, param_var,lsets)
+    user_plt_settings = {
+        'title'       : f'{lvname} over {region} region ',
+        'ylabel'      : f'{svname}, {lp_units}',
+        'output_name' : f'{svname}_{region}.png',
+        'legend_pos'  : 'upper left',
+    }
+
+
+    # =============================    Main program   =======================
     print('START program')
     # -- Get input paths and actual NetCDF reserch attributes:
-    ipaths, res_param = get_path_in(lst4dsnames, param_var)
+    ipaths, res_param = get_path_in(lst4dsnames, param_var,lsets)
     if lmodis_nat == True:
         for i in range(len(lst4dsnames)):
             if lst4dsnames[i] == 'BA_MODIS':
                 tmp_ipath, tmp_res_param = get_path_in(
-                    ['BA_MODIS'], 'burned_area_nat')
+                    ['BA_MODIS'], 'burned_area_nat', lsets)
                 ipaths[i]    = tmp_ipath[0]
                 res_param[i] = tmp_res_param[0]
     # -- Get data:
-    lst4data = xrlib.get_data(ipaths, lst4dsnames, param_var, res_param)
-    # Convert data to one grid size
-    lst4data = xrlib.get_interpol(lst4data, lst4dsnames, region, param_var)
-    # Get annual mean values
+    lst4data = xrlib.get_data(ipaths, lst4dsnames, param_var, res_param, tlm)
+    # -- Convert data to one grid size:
+    lst4data = xrlib.get_interpol(lst4data, lst4dsnames, region, param_var, tlm)
+    # -- Get annual mean values:
     amean    = xrlib.annual_mean(lst4data, param_var)
     # -- Get JULES metainformation (path, labels and ets.)
     jds = ['JUL_S2Prog']
-    jipaths, jres_param = get_path_in(jds, param_var)
-    jsvname, jlvname, jlp_units, jcp_units = get_parameters(jds, param_var)
+    jipaths, jres_param = get_path_in(jds, param_var, lsets)
+    jsvname, jlvname, jlp_units, jcp_units = get_parameters(jds, param_var, lsets)
     print(jipaths[0], jres_param[0])
-    # Get JULES data
+
+    # -- Get JULES data:
     jul_nc = xr.open_dataset(jipaths[0])
     # -- Rename attributes:
     #jul_nc = jul_nc.rename({'longitude':'lon', 'latitude':'lat'})
@@ -93,16 +110,14 @@ if __name__ == '__main__':
                                                      jul_nc.lon.values))},
                                    coords = {'lat' : jul_nc.lat.values,
                                              'lon' : jul_nc.lon.values}))
-    rec_coef = 1e-9
+
     #jul_nc['burned_area'] = (
     #    jul_nc[jres_param[0]] * jul_nc['area'] * rec_coef *
     #    jul_nc[jres_param[0]].time.dt.days_in_month * 24 * 3600
     #)
 
     jul_nc['burned_area'] = ((
-        jul_nc[jres_param[0]] / 100)* jul_nc['area'] * rec_coef #*
-        #jul_nc[jres_param[0]].time.dt.days_in_month #* 24 * 3600
-    )
+        jul_nc[jres_param[0]] / 100)* jul_nc['area'] * rec_coef)
 
     jul_ba = (jul_nc['burned_area'].sum(dim = {'lat', 'lon'})
                                    .sel(time = slice(year_start,year_stop))
@@ -110,7 +125,17 @@ if __name__ == '__main__':
     )
     lst4dsnames = lst4dsnames + ['JUL_S2Prog']
     amean.extend([jul_ba])
-    # Create linear plot
-    one_linear_plot(lst4dsnames, region , param_var, amean, user_plt_settings, pout)
+
+    # -- Create linear plot:
+    one_linear_plot(
+        lst4dsnames,
+        region,
+        param_var,
+        amean,
+        user_plt_settings,
+        pout,
+        tlm,
+        tstart = int(year_start),
+    )
     print('END program')
 #=============================    End of program   ============================

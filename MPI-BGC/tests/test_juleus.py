@@ -60,11 +60,15 @@ def comp_area_lat_lon(lat, lon):
 
 #jul_1d   = 'C:/Users/evchur/Desktop/JULES_S2Prog_burntArea_1deg.nc'
 #jul_05d  = 'C:/Users/evchur/Desktop/JULES_S2Prog_burntArea_05deg.nc'
-jul_or   = '../scratch/evchur/JULES/Prog/4test/JULES_S2_v6.3_cVeg.nc'           # This path was changed because of security reasons
-jul_1d   = '../scratch/evchur/JULES/Prog/4test/JULES_S2Prog_cVeg_1deg.nc'       # This path was changed because of security reasons
-#jul_or   = '../scratch/evchur/JULES/Prog/4test/JULES_S2_v6.3_cVeg.nc'
-#jul_1d   = '../scratch/evchur/JULES/Prog/4test/JULES_S2Prog_cVeg_1deg.nc'
+jul_or   = '../scratch/evchur/JULES/Prog/4test/JULES_S2_v6.3_cVeg.nc'
+jul_1d   = '../scratch/evchur/JULES/Prog/4test/JULES_S2Prog_cVeg_1deg.nc'
+
+#jul_or   = 'X:/scratch/evchur/JULES/Prog/4test/JULES_S2_v6.3_cVeg.nc'
+#jul_1d   = 'X:/scratch/evchur/JULES/Prog/4test/JULES_S2Prog_cVeg_1deg.nc'
 #jul_05d  = 'C:/Users/evchur/Desktop/JULES_S2Prog_cVeg_05deg.nc'
+
+#"X:\scratch\evchur\JULES\Prog\4test\JULES_S2Prog_cVeg_1deg.nc"
+
 ocn_05d = 'C:/Users/evchur/Desktop/DATA/OCN_fire/RECCAP2_DATA\OCN_S0_cVeg.nc'
 
 #grid4domain[i] = grid4domain[i].interp_like(

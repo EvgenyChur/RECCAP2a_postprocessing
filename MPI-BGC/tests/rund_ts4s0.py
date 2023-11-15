@@ -21,7 +21,6 @@ Version    Date       Name
            Code refactoring
 """
 # =============================     Import modules     ==================
-# -- Standard:
 import os
 import sys
 import numpy as np
@@ -29,21 +28,25 @@ import pandas as pd
 import random
 # -- Personal:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.path_settings import output_path
-from libraries.lib4sys_support import makefolder
+from settings import logical_settings, get_output_path
+from libraries import makefolder
 # =============================   Personal functions   ==================
 
-# =============================   User settings   =======================
-# -- Get output paths and create folder for results
-data_OUT = makefolder(output_path().get('rand_ts4s0'))
-pout     = data_OUT + 's0_seq_years.txt'
-print(f'Your data will be saved at {pout}')
-
-first_year = 1950 # first year
-last_year = 1959  # last year
-niter = 10000     # numbers of iterations
 # =============================    Main program   =======================
 if __name__ == '__main__':
+       # =============================   User settings   ================
+       # Load basic user logical settings:
+       lsets = logical_settings(lcluster = True)
+
+       # -- Get output paths and create folder for results
+       data_OUT = makefolder(get_output_path(lsets).get('rand_ts4s0'))
+       pout     = data_OUT + 's0_seq_years.txt'
+       print(f'Your data will be saved at {pout}')
+
+       first_year = 1950 # first year
+       last_year = 1959  # last year
+       niter = 10000     # numbers of iterations
+
        # -- Create timeseries:
        iterations = np.arange(1, niter, 1)
        # -- Add random values in range 1950 - 1959

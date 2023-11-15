@@ -26,7 +26,7 @@ param="LAI"
 # -- Grid resolution:
 lonlat="7200.3600"
 # -- Paths:
-DIR=../ # This path was changed because of security reasons
+DIR=..
 DIR_IN="${DIR}"/data/DataStructureMDI/DATA/grid/Global/0d050_daily/LTDR/v5/Data/LAI
 DIR_OUT="${DIR}"/scratch/evchur/LAI/LAI_0d05_annual
 

@@ -16,24 +16,23 @@ Version    Date       Name
     1.1    08.02.23 Evgenii Churiulin, MPI-BGC
            Initial release
 """
-# =============================     Import modules     ========================
-# 1.1: Standard modules
+# =============================     Import modules     ================
 import sys
 from urllib import request
 from urllib.error import HTTPError
 
-# =============================   Personal functions   ========================
+# =============================   Personal functions   ================
 
-# ================   User settings (have to be adapted)  ======================
-remote_url = sys.argv[1]  
-local_file = sys.argv[2]  
-log_file   = sys.argv[3]
-
-# =============================    Main program   =============================
-logf = open(log_file, "a")
-try:
-    logf.write("GFED data were downloaded {0} \n".format(str(remote_url)))
-    request.urlretrieve(remote_url, local_file)
-except HTTPError as error:
-    logf.write("Failed to download {0}: {1}\n".format(str(remote_url), str(error)))
-# =============================    End of program   ===========================
+if __name__ == '__main__':
+    # ================   User settings (have to be adapted)  ==========
+    remote_url = sys.argv[1]
+    local_file = sys.argv[2]
+    log_file = sys.argv[3]
+    # =============================    Main program   =================
+    logf = open(log_file, "a")
+    try:
+        logf.write("GFED data were downloaded {0} \n".format(str(remote_url)))
+        request.urlretrieve(remote_url, local_file)
+    except HTTPError as error:
+        logf.write("Failed to download {0}: {1}\n".format(str(remote_url), str(error)))
+    # =============================    End of program   ===============

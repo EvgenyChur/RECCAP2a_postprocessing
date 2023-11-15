@@ -55,73 +55,73 @@ def get_GFED_data(years:np.Array, ds_settings:dict) -> xr.Dataset:
     gfed4s.to_netcdf(pout)
     return gfed4s
 
-# ================   User settings (have to be adapted)  ================
-# -- Main path for data:
-mpath = '../people/evchur/GFED_2002-2020'                                       # This path was changed because of security reasons
-# -- Time limits
-trange = np.arange(2002, 2021, 1)
-# -- Research parameters:
-params = ['BA_TOT', 'BA_FL', 'C_AG_TOT', 'C_BG_TOT', 'C_AG_FL', 'C_BG_FL']
-# -- Settings for parameters from NetCDF file:
-set4data = {
-    # Total fire burned area:
-    'BA_TOT' : {
-        'pin'           : mpath + '/Model500m_2002-2020yr_025d',                # Input path (data with burned area)
-        'pout'          : mpath + '/GFED_burned_area_2002-2020_025d.nc',        # Ouput path
-        'nc_group'      : 'MOD_CMG025',                                         # Main NetCDF group
-        'sub_group'     : 'burned_area',                                        # Subgroup from NetCDF file
-        'nc_attrib'     : 'BA_TOT',                                             # Attribute from subgroup
-        'nc_attrib_new' : 'burned_area',                                        # New attribute name
-    },
-    # Fire-related forest burned area:
-    'BA_FL' : {
-        'pin'           : mpath + '/Model500m_2002-2020yr_025d',
-        'pout'          : mpath + '/GFED_FL_burned_area_2002-2020_025d.nc',
-        'nc_group'      : 'MOD_CMG025',
-        'sub_group'     : 'burned_area',
-        'nc_attrib'     : 'BA_FL',
-        'nc_attrib_new' : 'burned_area',
-    },
-    # Total biomass burning carbon emissions from aboveground:
-    'C_AG_TOT' : {
-        'pin'           : mpath + '/Model500m_2002-2020yr_025d',
-        'pout'          : mpath + '/GFED_C_AG_TOT_2002-2020_025d.nc',
-        'nc_group'      : 'MOD_CMG025',
-        'sub_group'     : 'emissions',
-        'nc_attrib'     : 'C_AG_TOT',
-        'nc_attrib_new' : 'c_ag_tot',
-    },
-    # Total biomass burning carbon emissions from belowground:
-    'C_BG_TOT' : {
-        'pin'           : mpath + '/Model500m_2002-2020yr_025d',
-        'pout'          : mpath + '/GFED_C_BG_TOT_2002-2020_025d.nc',
-        'nc_group'      : 'MOD_CMG025',
-        'sub_group'     : 'emissions',
-        'nc_attrib'     : 'C_BG_TOT',
-        'nc_attrib_new' : 'c_bg_tot',
-    },
-    # Fire-related forest loss carbon emissions from aboveground:
-    'C_AG_FL' : {
-        'pin'           : mpath + '/Model500m_2002-2020yr_025d',
-        'pout'          : mpath + '/GFED_C_AG_FL_2002-2020_025d.nc',
-        'nc_group'      : 'MOD_CMG025',
-        'sub_group'     : 'emissions',
-        'nc_attrib'     : 'C_AG_FL',
-        'nc_attrib_new' : 'c_ag_fl',
-    },
-    # Fire-related forest loss carbon emissions from belowground:
-    'C_BG_FL' : {
-        'pin'           : mpath + '/Model500m_2002-2020yr_025d',
-        'pout'          : mpath + '/GFED_C_BG_FL_2002-2020_025d.nc',
-        'nc_group'      : 'MOD_CMG025',
-        'sub_group'     : 'emissions',
-        'nc_attrib'     : 'C_BG_FL',
-        'nc_attrib_new' : 'c_bg_fl',
-    },
-}
 
-# =============================    Main program   =======================
 if __name__ == '__main__':
+    # ================   User settings (have to be adapted)  ================
+    # -- Main path for data:
+    mpath = '../people/evchur/GFED_2002-2020'
+    # -- Time limits
+    trange = np.arange(2002, 2021, 1)
+    # -- Research parameters:
+    params = ['BA_TOT', 'BA_FL', 'C_AG_TOT', 'C_BG_TOT', 'C_AG_FL', 'C_BG_FL']
+    # -- Settings for parameters from NetCDF file:
+    set4data = {
+        # Total fire burned area:
+        'BA_TOT' : {
+            'pin'           : mpath + '/Model500m_2002-2020yr_025d',                # Input path (data with burned area)
+            'pout'          : mpath + '/GFED_burned_area_2002-2020_025d.nc',        # Ouput path
+            'nc_group'      : 'MOD_CMG025',                                         # Main NetCDF group
+            'sub_group'     : 'burned_area',                                        # Subgroup from NetCDF file
+            'nc_attrib'     : 'BA_TOT',                                             # Attribute from subgroup
+            'nc_attrib_new' : 'burned_area',                                        # New attribute name
+        },
+        # Fire-related forest burned area:
+        'BA_FL' : {
+            'pin'           : mpath + '/Model500m_2002-2020yr_025d',
+            'pout'          : mpath + '/GFED_FL_burned_area_2002-2020_025d.nc',
+            'nc_group'      : 'MOD_CMG025',
+            'sub_group'     : 'burned_area',
+            'nc_attrib'     : 'BA_FL',
+            'nc_attrib_new' : 'burned_area',
+        },
+        # Total biomass burning carbon emissions from aboveground:
+        'C_AG_TOT' : {
+            'pin'           : mpath + '/Model500m_2002-2020yr_025d',
+            'pout'          : mpath + '/GFED_C_AG_TOT_2002-2020_025d.nc',
+            'nc_group'      : 'MOD_CMG025',
+            'sub_group'     : 'emissions',
+            'nc_attrib'     : 'C_AG_TOT',
+            'nc_attrib_new' : 'c_ag_tot',
+        },
+        # Total biomass burning carbon emissions from belowground:
+        'C_BG_TOT' : {
+            'pin'           : mpath + '/Model500m_2002-2020yr_025d',
+            'pout'          : mpath + '/GFED_C_BG_TOT_2002-2020_025d.nc',
+            'nc_group'      : 'MOD_CMG025',
+            'sub_group'     : 'emissions',
+            'nc_attrib'     : 'C_BG_TOT',
+            'nc_attrib_new' : 'c_bg_tot',
+        },
+        # Fire-related forest loss carbon emissions from aboveground:
+        'C_AG_FL' : {
+            'pin'           : mpath + '/Model500m_2002-2020yr_025d',
+            'pout'          : mpath + '/GFED_C_AG_FL_2002-2020_025d.nc',
+            'nc_group'      : 'MOD_CMG025',
+            'sub_group'     : 'emissions',
+            'nc_attrib'     : 'C_AG_FL',
+            'nc_attrib_new' : 'c_ag_fl',
+        },
+        # Fire-related forest loss carbon emissions from belowground:
+        'C_BG_FL' : {
+            'pin'           : mpath + '/Model500m_2002-2020yr_025d',
+            'pout'          : mpath + '/GFED_C_BG_FL_2002-2020_025d.nc',
+            'nc_group'      : 'MOD_CMG025',
+            'sub_group'     : 'emissions',
+            'nc_attrib'     : 'C_BG_FL',
+            'nc_attrib_new' : 'c_bg_fl',
+        },
+    }
+    # =============================    Main program   =======================
     ds = []
     for var in params:
         print(f'Data processing for {var}')

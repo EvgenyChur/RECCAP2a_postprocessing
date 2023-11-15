@@ -540,12 +540,13 @@ def ba_pft_new():
                      pft11, pft12, pft13             ), axis = 1)
     return cons
 
-#=============================    Main program   ============================== 
+
 if __name__ == '__main__':
-    
-    veget_max                   = get_veget_max() # get land cover fractions
-    m_baf, m_days, x_ocn, d_baf = ocn_data()      # get monthly and daily values of burned area fraction  
-    baf_pft                     = ba_pft_new()    # get monthy burned area fraction for each PFT
-    
-#=============================    End of program   ============================     
-    
+    #=============================    Main program   =========================
+    # get land cover fractions:
+    veget_max = get_veget_max()
+    # get monthly and daily values of burned area fraction:
+    m_baf, m_days, x_ocn, d_baf = ocn_data()
+    # get monthy burned area fraction for each PFT
+    baf_pft = ba_pft_new()
+    #=============================    End of program   =======================

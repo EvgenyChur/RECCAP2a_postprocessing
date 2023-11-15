@@ -57,270 +57,357 @@ Version    Date       Name
            2 - res_param was udapted, due to changes in path_settings 
     1.5    2023-05-22 Evgenii Churiulin, MPI-BGC
            Code refactoring
+    1.6    2023-11-13 Evgenii Churiulin, MPI-BGC
+           Code refactoring
 """
 # =============================     Import modules     ==================
-# 1.1: Standard modules
 import os
 import sys
+sys.path.append(os.path.join(os.getcwd(), '..'))
 import warnings
 warnings.filterwarnings("ignore")
 
-# 1.2 Personal module
-sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4xarray import get_data, get_interpol, annual_mean
-from libraries.lib4sys_support import makefolder
-from settings import user_settings as uset
-from settings import path_settings as pset
-from calc.one_point import one_point_calc
-from calc.vis_controls import one_linear_plot, one_plot, collage_plot
-from calc.stat_controls import timmean, timstd, timtrend, get_difference
+from settings import (logical_settings, lcalc_settings, config, get_settigs4_annual_plots,
+    get_settings4maps, get_path_in, get_output_path, get_settings4ds_time_limits,
+    get_settings4diff_data, get_parameters)
+from libraries import makefolder, get_data, get_interpol, annual_mean
+from calc import Statistic, one_point_calc, one_linear_plot, one_plot, collage_plot
 # =============================   Personal functions   ==================
 
-# ================   User settings (have to be adapted)  ================
+def plt_title_and_output_name(
+    dsnames:list[str], pout:str, **kwargs) -> tuple[list[str], list[str]]:
+    """Create user lists with information about plot title and output names:"""
+    # -- Local variables:
+    ptf = 'png'
+    stp = kwargs.get('stat_param') if 'stat_param' in kwargs else 'NOT_STAT_PARAM'
+    lvn = kwargs.get('long_name')  if 'long_name'  in kwargs else 'NOT_SET_LVNAME'
+    svn = kwargs.get('short_name') if 'short_name' in kwargs else 'NOT_SET_SVNAME'
+    reg = kwargs.get('region') if 'region' in kwargs else 'NOT_SET_REGION'
+    yr1 = kwargs.get('frs_yr') if 'frs_yr' in kwargs else 1980
+    yr2 = kwargs.get('lst_yr') if 'lst_yr' in kwargs else 2025
+    ref = kwargs.get('ds4refer') if 'ds4refer' in kwargs else 'NOT_SET_REFER'
+    comp = kwargs.get('ds4comp') if 'ds4comp'  in kwargs else 'NOT_SET_DS_COMP'
+    # -- Create lists (in caseL COLLAGE and  DIFF create only 2 str values):
+    if stp in ('MEAN', 'STD', 'TREND'):
+        title = [
+            f'{stp} in {lvn} over {reg} region based on {nds} ({yr1} - {yr2})'
+            for nds in dsnames]
+        path_OUT = [pout + f'{stp}_{svn}_{nds}_{reg}.{ptf}' for nds in dsnames]
+    # -- Collage plot case:
+    elif (stp == 'COLLAGE'):
+        title = f'Comparison {lvn} over {reg} region ({yr1} - {yr2}):'
+        path_OUT = pout + f'Collage_{svn}_{reg}.{ptf}'
+    # -- Difference plot
+    elif (stp == 'DIFF'):
+        title = (
+            f'Difference ({refer} - {comp_ds}) in {svname} '
+            f'over {region} region ({yr1} - {yr2})')
+        path_OUT = (pout + f'Diff_{svn}_{ref}_{comp}_{reg}.{ptf}')
+    else: # wildcard
+        raise TypeError('Incorrect type of statistical parameter')
+    return title, path_OUT
 
-# -- Logical parameteres (All parameter you can choose at user_settings):
-lnc_info        = uset.logical_settings[1]    # Do you want to get more information about data?
-station_mode    = uset.logical_settings[2]    # Do you want to get values for stations
-lvis_lines      = uset.logical_settings[3]    # Do you want to visualize data (line plots)
-lBasemap_moment = uset.logical_settings[4]    # Do you want to visualize data on grid for one moment?
-lmodis_nat      = True                        # Use natural PFT or all
 
-# -- Settings for research domain and parameter:
-#    You can run this script manually for your research domain and parameter or
-#    you can set them in run_ocn_postprocessing.sh script.
-
-# -- Manual mode (uncomment these lines):
-#region    = 'Global'      # Research domain
-#param_var = 'burned_area' # Research parameter
-
-# -- Automatic mode (uncomment these lines)
-region     = sys.argv[1] # Research domain
-param_var  = sys.argv[2] # Research parameter
-
-print('Actual research domain - fire_xarray:',region)
-print('Actual research parameter - fire_xarray:', param_var)
-
-# -- Format of output figures:
-plt_format = uset.form4out_fig
-
-# -- Get datasets and time perios for them (satellite + ocn):
-lst4dsnames = uset.av_datasets.get(param_var)
-
-# -- Get input paths and NetCDF attributes:
-ipaths, res_param = pset.get_path_in(lst4dsnames, param_var)
-if lmodis_nat == True: 
-    for i in range(len(lst4dsnames)):
-        if lst4dsnames[i] == 'BA_MODIS':
-            tmp_path, tmp_res_param = pset.get_path_in([lst4dsnames[i]], 'burned_area_nat')
-            ipaths[i]    = tmp_path[0]
-            res_param[i] = tmp_res_param[0]
-
-# -- Get output paths and create folder for results:
-data_OUT = pset.output_path().get('fire_xarray')
-data_OUT = makefolder(data_OUT + f'/{param_var}')
-print(f'Your data will be saved at {data_OUT}')
-
-#==============================================================================
-# 2.  Additional parameters - User settings (if you want you can change it,
-#     but the program can work with the actual parameters without changes)
-#==============================================================================
-  
-# 2.1: Get initial parameters for research datasets
-#------------------------------------
-#   1. svname    - Short name of the parameter
-#   2. lvname    - Full  name of the parameter
-#   3. lp_units  - Units for 2D plots
-#   4. cp_units  - Units for 3D plots 
-svname, lvname, lp_units, cp_units = pset.get_parameters(lst4dsnames, param_var) 
-
-# 2.3: Case: lBasemap_moment = TRUE
-if lBasemap_moment == True:
-     # 2.3.1 Define parameters for calculations:
-    lmean_calc  = uset.calculation_settings[0]             # use mean algorithm?
-    lstd_calc   = uset.calculation_settings[1]             # use std algorithm?
-    ltrend_calc = uset.calculation_settings[2]             # use trends algorithm?
-    ldifference = uset.calculation_settings[3]             # use diff algorithm?
-    # 2.3.2 Define algorithms for visualization: 
-    lmean_plot  = uset.calculation_settings[4]             # plot mean?  (one figure)
-    lstd_plot   = uset.calculation_settings[5]             # plot std?  (one figure)
-    ltrend_plot = uset.calculation_settings[6]             # plot treand?  (one figure)
-    lcollage    = uset.calculation_settings[7]             # plot collage?
-                                                           # (1st row - mean, 2nd row - std, 3rd  row - trend)
-    ldiff_plot  = uset.calculation_settings[8]             # plot diff. collage?
-                                                           # (1st row - mean, 2nd row - std, 3rd  row - trend)
-    # Define y axis labal for all figures (plots):
-    bm_ylabel   = f'{svname}, {cp_units}'
-    # FIRST and LAST year (need for title and output data):
-    frs_yr      = uset.time_limits.get(param_var).get('OCN')[0]
-    lst_yr      = uset.time_limits.get(param_var).get('OCN')[1]
-
-    # 1.5 Define datasets for difference metrics (diff = refer - comp_ds) 
-    if ((lBasemap_moment == True) and (ldifference == True)):
-        refer   = uset.diff_options.get(param_var)[0]
-        comp_ds = uset.diff_options.get(param_var)[1]
-        print('Set datsets for calculating difference (diff = refer - comp_ds)')
-        print('Actual refer'  , refer)
-        print('Actual comp_ds', comp_ds)
-
-        # Fast control: Check datasets (refer and comp_ds) in lst4dsnames
-        if ((refer in lst4dsnames) and (comp_ds in lst4dsnames)):
-            print('Reference and experiment datasets are in lst4dsnames \n')
-        else:
-            print('There are no datasets (reference or experiment) in lst4dsnames.'
-                  ' Please, correct data in user_settings \n')
-            sys.exit()
-
-# =============================    Main program   =======================
 if __name__ == '__main__':
-    print('START program')
-    lst4data = get_data(ipaths, lst4dsnames, param_var, res_param)              # Get initial data from NetCDF
-    lst4data = get_interpol(lst4data, lst4dsnames, region, param_var)           # Convert data to one grid size (upscalling or interpolation)
+    # ================   User settings (have to be adapted)  ================
+    # -- Settings for research domain and parameter:
+    #    You can run this script manually for your research domain and parameter or
+    #    you can set them in run_ocn_postprocessing.sh script.
 
-    # -- Calculations and Visualization:
-    # 4.1 Get one point data
-    if station_mode == True and region == 'Global':
+    # -- Manual mode (uncomment these lines):
+    #start_year = 2003
+    #end_year = 2010
+    #region = 'Global'
+    #param_var = 'burned_area'
+
+    # -- Automatic mode (uncomment these lines)
+    start_year = int(sys.argv[1])
+    end_year = int(sys.argv[2])
+    region  = sys.argv[3]
+    param_var = sys.argv[4]
+    print('Actual research domain - fire_xarray:',region)
+    print('Actual research parameter - fire_xarray:', param_var)
+
+    # -- Load basic logical settings:
+    lsets = logical_settings(
+        lcluster = True,        # Are you working on cluster?
+        lnc_info = False,       # Do you want to get more information about data?
+        station_mode = False,   # Do you want to get values for stations
+        lvis_lines = False,      # Do you want to visualize data (line plots)
+        lBasemap_moment = True,# Do you want to visualize data on grid for one moment?
+    )
+    # -- Load other logical parameters:
+    lmodis_nat = True          # Use natural PFT or all
+    lfire = True                # Is fire_xarray script active?
+
+    # -- Load basic user settings:
+    # -- There is not a strict time rule to time axis:
+    if lsets.get('lvis_lines'):
+        bcc = config.Bulder_config_class(
+            ocn = [int(start_year), int(end_year)],
+            jul = [int(start_year), int(end_year)],
+            orc = [int(start_year), int(end_year)],
+            #modis = [int(start_year), int(end_year)],
+            #gfed_tot = [int(start_year), int(end_year)],
+            #gfed41s = [int(start_year), int(end_year)],
+        )
+        tlm = bcc.user_settings()
+        # -- Get datasets and time perios for them (satellite + ocn):
+        av_datasets = get_settigs4_annual_plots(
+            lsets.get('lvis_lines'),
+            lsets.get('lBasemap_moment'),
+            tstart = start_year,
+            tstop = end_year,
+        )
+
+    # -- Load basic user settings:
+    # -- There is a strict time rule to time axis:
+    if lsets.get('lBasemap_moment'):
+        bcc = config.Bulder_config_class(
+            ocn = [int(start_year), int(end_year)],
+            jul = [int(start_year), int(end_year)],
+            orc = [int(start_year), int(end_year)],
+            modis = [int(start_year), int(end_year)],
+            gfed_tot = [int(start_year), int(end_year)],
+            gfed41s = [int(start_year), int(end_year)],
+        )
+        tlm = bcc.user_settings()
+        # -- Get datasets and time perios for them (satellite + ocn):
+        av_datasets = get_settings4maps(
+            lsets.get('lvis_lines'),
+            lsets.get('lBasemap_moment'),
+            tstart = start_year,
+            tstop = end_year,
+        )
+    # -- Get dataset names:
+    lst4dsnames = av_datasets.get(param_var)
+    # -- Get input paths and NetCDF attributes:
+    ipaths, res_param = get_path_in(lst4dsnames, param_var, lsets)
+    if lmodis_nat:
+        for i in range(len(lst4dsnames)):
+            if lst4dsnames[i] == 'BA_MODIS':
+                tmp_path, tmp_res_param = get_path_in(
+                    [lst4dsnames[i]], 'burned_area_nat', lsets)
+                ipaths[i] = tmp_path[0]
+                res_param[i] = tmp_res_param[0]
+
+    # -- Get output paths and create folder for results:
+    data_OUT = makefolder(get_output_path(lsets).get('fire_xarray') + f'/{param_var}')
+    print(f'Your data will be saved at {data_OUT}')
+
+    # -- Load user parameters for datasets (mainly important for plot titles):
+    # svname - Short name of the parameter, lvname - Full  name of the parameter,
+    # lp_units - Units for 2D plots, cp_units - Units for 3D plots
+    svname, lvname, lp_units, cp_units = get_parameters(
+        lst4dsnames, param_var, lsets)
+
+    # -- Load extra logical settings for computation (active if lBasemap_moment if True):
+    if lsets.get('lBasemap_moment'):
+        lcalc = lcalc_settings(
+            lstat = True,           # Activate algorithm for mean, std and trends calculations?
+            lmean_plot = False,      # Activate algorithm for mean visualization (one figure)?
+            lstd_plot = False,       # Activate algorithm for std visualization (one figure)?
+            ltrend_plot = False,     # Activate algorithm for trends visualization (one figure)?
+            lcollage = True,        # Activate algorithm for collage plots: mean, std, trend
+            ldiff_calc = True,      # Activate algorithm for difference calculations?
+        )
+        # -- Define y axis labal for all figures (plots):
+        bm_ylabel = f'{svname}, {cp_units}'
+        # -- Get time limits for plot titles and output names:
+        frs_yr = get_settings4ds_time_limits(tlm).get(param_var).get('OCN')[0]
+        lst_yr = get_settings4ds_time_limits(tlm).get(param_var).get('OCN')[1]
+
+        # -- Get title and output names for maps (MEAN, STD, TREND, COLLAGE):
+        m_title, m_path_OUT = plt_title_and_output_name(
+            lst4dsnames, data_OUT,
+            stat_param = 'MEAN',
+            long_name = lvname, short_name = svname, region = region,
+            frs_yr = start_year, lst_yr = end_year,
+        )
+        s_title, s_path_OUT = plt_title_and_output_name(
+            lst4dsnames, data_OUT,
+            stat_param = 'STD',
+            long_name = lvname, short_name = svname, region = region,
+            frs_yr = start_year, lst_yr = end_year,
+        )
+        t_title, t_path_OUT = plt_title_and_output_name(
+            lst4dsnames, data_OUT,
+            stat_param = 'TREND',
+            long_name = lvname, short_name = svname, region = region,
+            frs_yr = start_year, lst_yr = end_year,
+        )
+        c_title, c_path_OUT = plt_title_and_output_name(
+            lst4dsnames, data_OUT,
+            stat_param = 'COLLAGE',
+            long_name = lvname, short_name = svname, region = region,
+            frs_yr = start_year, lst_yr = end_year,
+        )
+
+        # -- Define datasets for difference metrics (diff = refer - comp_ds):
+        if lcalc.get('ldiff_calc'):
+            print('Set datsets for calculating difference (diff = refer - comp_ds)')
+            get_diff_options = get_settings4diff_data(
+                ba_refer = 'BA_MODIS', ba_comp = 'OCN_S2Diag_v4',
+                ffire_refer = 'GFED4.1s', ffire_comp = 'OCN_S2Diag_v4')
+            refer   = get_diff_options.get(param_var)[0]
+            comp_ds = get_diff_options.get(param_var)[1]
+            print('Actual refer:', refer, 'Actual comp_ds: ', comp_ds)
+            dif_title, dif_path_OUT = plt_title_and_output_name(
+                lst4dsnames, data_OUT,
+                stat_param = 'DIFF',
+                long_name = lvname, short_name = svname, region = region,
+                frs_yr = start_year, lst_yr = end_year,
+                ds4refer = refer, ds4comp = comp_ds,
+            )
+            # -- Fast control: Check datasets (refer and comp_ds) in lst4dsnames:
+            if ((refer not in lst4dsnames) and (comp_ds not in lst4dsnames)):
+                print('There are no datasets (reference or experiment) in lst4dsnames.'
+                      ' Please, correct data in user_settings \n')
+                sys.exit()
+
+
+    # =============================    Main program   =======================
+    print('START program')
+    # -- Get data from NetCDF files:
+    lst4data = get_data(ipaths, lst4dsnames, param_var, res_param, tlm)
+    # -- Convert data to one grid size (upscalling or interpolation):
+    lst4data = get_interpol(lst4data, lst4dsnames, region, param_var, tlm)
+
+    # -- Step 1: Create annual plots for stations and for selected domains:
+    # -- Get one point data
+    if lsets.get('station_mode') and region == 'Global':
         print(f'One point mode - domain {region} \n')
         points_test = one_point_calc(
-            lst4dsnames, lst4data, param_var, lvname, svname, data_OUT, region)
-    else:
-        print('Function for calculation and visualization of data for stations was turn off \n')
+            lst4dsnames,
+            lst4data,
+            param_var,
+            lvname,
+            svname,
+            data_OUT,
+            region,
+            tlm,
+            tstart = start_year,
+        )
 
-    # 4.2 Line plots
-    if lvis_lines == True:
-        # 4.2.1: Get annual plot
+    # -- Preparing data and creating linear annual plots based on them:
+    if lsets.get('lvis_lines'):
+        # -- Get user settings for annual plots (title, y label, output name, legend location):
         user_plt_settings = {
-            'title'       : f'{lvname} over {region} region ',                  # plot title
-            'ylabel'      : f'{svname}, {lp_units}'          ,                  # y axis label
-            'output_name' : f'{svname}_{region}.{plt_format}',                  # output plot name
-            'legend_pos'  : 'upper left'                     }                  # Position of the legend} upper - lower
-
-        # 4.2.2: Get annual mean data
-        print('Annual sum / mean values: \n')
+            'title' : f'{lvname} over {region} region ',
+            'ylabel' : f'{svname}, {lp_units}',
+            'output_name' : f'{svname}_{region}.png',
+            'legend_pos' : 'upper left',
+        }
+        # -- Get annual mean data
         amean = annual_mean(lst4data, param_var)
+        # -- Create plots:
         one_linear_plot(
-            lst4dsnames, region , param_var, amean, user_plt_settings, data_OUT)
-    else:
-        print('Function for visualization of annual data was turn off \n')
+            lst4dsnames,
+            region,
+            param_var,
+            amean,
+            user_plt_settings,
+            data_OUT,
+            tlm,
+            tstart = start_year,
+        )
 
-    # -- 2D Map - One moment:
-    if lBasemap_moment == True:
-        # -- Get data for plots
+    # -- Step 2: Create maps based on grid points:
+    if lsets.get('lBasemap_moment'):
+        # -- Load user class with statistical functions
+        stat = Statistic()
         # -- Get actual latitudes and longitudes for each dataset:
-        lst4lat  = []
-        lst4lon  = []
-        for i in range(len(lst4data)):
-            lst4lat.append(lst4data[i].lat.values)
-            lst4lon.append(lst4data[i].lon.values)
+        lst4lat = [lst4data[i].lat.values for i in range(len(lst4data))]
+        lst4lon = [lst4data[i].lon.values for i in range(len(lst4data))]
 
-        # -- Mean calculations and visualization:
-        if lmean_calc == True:
-            lst4mean = timmean(lst4dsnames, lst4data, param_var)
-            if lmean_plot == True:
-                # a. Get output settings for MEAN plots (titles, output_paths)
-                m_title    = []
-                m_path_OUT = []
-                for ds_name in lst4dsnames:
-                    m_title.append(f'Mean annual {lvname} over {region} region \n'
-                                   f'based on {ds_name} ({frs_yr} - {lst_yr})')
-                    m_path_OUT.append(data_OUT +
-                                      f'Mean_{svname}_{ds_name}_{region}.{plt_format}')
-                # b. Get MEAN plot
-                one_plot(
-                    lst4dsnames, 'mean', region, lst4lon, lst4lat, lst4mean,
-                    param_var, bm_ylabel, m_title, m_path_OUT,
-                )
-        # -- Standart deviation calculations and visualization:
-        if lstd_calc  == True:
-            lst4std  = timstd(lst4dsnames, lst4data, param_var)
-            if lstd_plot == True:
-                # a. Get output settings for STD plots (titles, output_paths)
-                s_title    = []
-                s_path_OUT = []
-                for ds_name in lst4dsnames:
-                    s_title.append(f'STD in {lvname} over {region} region '
-                                   f'based on {ds_name} ({frs_yr} - {lst_yr})')
-                    s_path_OUT.append(data_OUT +
-                                      f'STD_{svname}_{ds_name}_{region}.{plt_format}')
-                # b. Get STD plot
-                one_plot(
-                    lst4dsnames, 'std', region, lst4lon, lst4lat, lst4std,
-                    param_var, bm_ylabel, s_title, s_path_OUT,
-                )
-        # -- Time trend calculations and visualization:
-        if ltrend_calc == True:
-            lst4trends = timtrend(lst4dsnames, lst4data, param_var)
-            if ltrend_plot == True:
-                # a. Get output settings for TREND plots (titles, output_paths)
-                t_title    = []
-                t_path_OUT = []
-                for ds_name in lst4dsnames:
-                    t_title.append(f'Trend in {lvname} over {region} region '
-                                   f'based on {ds_name} ({frs_yr} - {lst_yr})')
-                    t_path_OUT.append(data_OUT +
-                                      f'TREND_{svname}_{ds_name}_{region}.{plt_format}')
-                one_plot(
-                    lst4dsnames, 'trend', region, lst4lon, lst4lat, lst4trends,
-                    param_var , bm_ylabel, t_title, t_path_OUT,
-                )
-
-        # -- Get Collage plot (mean, std, trend):
-        if lcollage == True:
-            print(f'Collage mode - Plot data for {region} region')
-            # Create plot
-            c_title    = f'Comparison {lvname} over {region} region ({frs_yr} - {lst_yr}):'
-            c_path_OUT = data_OUT + f'Collage_{svname}_{region}.{plt_format}'
-
-            collage_plot(
-                lst4dsnames,       # datasets
-                region,            # region
-                lst4lon,           # lon
-                lst4lat,           # lat
-                lst4mean,          # mean data
-                lst4std,           # std data
-                lst4trends,        # trend data
-                param_var,         # parameter
-                bm_ylabel,         # y label
-                c_title,           # plot title
-                c_path_OUT,        # output path
-                ldiff = False,     # diff mode = False
+        # -- Statistical parameters calculations (MEAN, STD, Time TREND):
+        if lcalc.get('lstat'):
+            lst4mean = stat.timmean(lst4dsnames, lst4data, param_var, fire_xarray = lfire)
+            lst4std  = stat.timstd(lst4dsnames, lst4data, param_var, fire_xarray = lfire)
+            lst4trends = stat.timtrend(lst4dsnames, lst4data, param_var, fire_xarray = lfire)
+        # -- Visualization of statistical parameters (MAP for each parameter):
+        # -- Create 2D  MEAN map:
+        if lcalc.get('lmean_plot'):
+            one_plot(
+                lst4dsnames,
+                'mean',
+                region, lst4lon, lst4lat,
+                lst4mean,
+                param_var,
+                bm_ylabel, m_title, m_path_OUT,
+                tlm,
             )
-        # -- Get plot with difference (Refer - simulation):
-        if ldifference == True:
-            # -- Get values for difference (mean, std, trend):
-            lst4comp_mean  = get_difference(lst4dsnames, refer, comp_ds, lst4mean)
-            lst4comp_std   = get_difference(lst4dsnames, refer, comp_ds, lst4std)
-            lst4comp_trend = get_difference(lst4dsnames, refer, comp_ds, lst4trends)
+        # -- Create 2D STD map:
+        if lcalc.get('lstd_plot'):
+            one_plot(
+                lst4dsnames,
+                'std',
+                region, lst4lon, lst4lat,
+                lst4std,
+                param_var,
+                bm_ylabel, s_title, s_path_OUT,
+                tlm,
+            )
+        # -- Create 2D TREND map:
+        if lcalc.get('ltrend_plot'):
+            one_plot(
+                lst4dsnames,
+                'trend',
+                region, lst4lon, lst4lat,
+                lst4trends,
+                param_var,
+                bm_ylabel, t_title, t_path_OUT,
+                tlm,
+            )
+        # -- Create collage figure with 2D maps (mean, std, trend):
+        if lcalc.get('lcollage'):
+            collage_plot(
+                # datasets
+                lst4dsnames,
+                # region, lon, lat
+                region, lst4lon, lst4lat,
+                # MEAN, STD, TREND stat. data
+                lst4mean, lst4std, lst4trends,
+                # parameter
+                param_var,
+                # y label, plot title, output path
+                bm_ylabel, c_title, c_path_OUT,
+                # user class with settings
+                tlm,
+                # diff mode = False
+                ldiff = False,
+            )
 
-            lst4lon = []
-            lst4lat = []
-            for i in range(len(lst4comp_mean)):
-                lst4lon.append(lst4comp_mean[i].lon.values)
-                lst4lat.append(lst4comp_mean[i].lat.values)
-            if ldiff_plot == True:
-                print(f'Difference mode - Plot data for {region} region')
-                # -- Create plot:
-                dif_title    = (f'Difference ({refer} - {comp_ds}) in {svname} '
-                                f'over {region} region ({frs_yr} - {lst_yr})')
-                dif_path_OUT = (data_OUT +
-                                f'Diff_{svname}_{refer}_{comp_ds}_{region}.{plt_format}')
-                collage_plot(
-                    lst4comp_mean,     # datasets
-                    region,            # region
-                    lst4lon,           # lon
-                    lst4lat,           # lat
-                    lst4comp_mean,     # mean data
-                    lst4comp_std,      # std data
-                    lst4comp_trend,    # trend data
-                    param_var,         # parameter
-                    bm_ylabel,         # y label
-                    dif_title,         # title
-                    dif_path_OUT ,     # path out
-                    ldiff = True,      # diff mode = True
-                    refer = refer ,    # reference dataset
-                    comp_ds = comp_ds, # dataset for comparison
-                )
-    else:
-        print('Function for visualizing MEAN, STD or TRENDS values'
-              ' from NetCDF on the grid was switched off \n')
+        # -- Create collage plot with 2D difference maps (Refer - simulation):
+        if lcalc.get('ldiff_calc'):
+            # -- Get values for difference (mean, std, trend):
+            lst4comp_mean  = stat.get_difference(lst4dsnames, refer, comp_ds, lst4mean)
+            lst4comp_std   = stat.get_difference(lst4dsnames, refer, comp_ds, lst4std)
+            lst4comp_trend = stat.get_difference(lst4dsnames, refer, comp_ds, lst4trends)
+            # -- Get actual latitude and longitude values:
+            lst4lon = [lst4comp_mean[i].lon.values for i in range(len(lst4comp_mean))]
+            lst4lat = [lst4comp_mean[i].lat.values for i in range(len(lst4comp_mean))]
+            # -- Create difference plot:
+            collage_plot(
+                # datasets
+                lst4comp_mean,
+                # region, lon, lat
+                region, lst4lon, lst4lat,
+                # DIFF MEAN, STR, TREND data
+                lst4comp_mean, lst4comp_std, lst4comp_trend,
+                # parameter
+                param_var,
+                # y label, title, path out
+                bm_ylabel, dif_title, dif_path_OUT,
+                # user class
+                tlm,
+                # diff mode = True
+                ldiff = True,
+                # reference dataset
+                refer = refer,
+                # dataset for comparison
+                comp_ds = comp_ds,
+            )
+
     print('END program')
 # =============================    End of program   =====================

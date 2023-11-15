@@ -56,15 +56,10 @@ import xarray as xr
 
 # -- Personal module:
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4xarray import get_data, get_interpol
-from libraries.lib4upscaling_support import get_upscaling_ba_veg_class
-from libraries.lib4sys_support import makefolder
-from libraries.lib4colors import check_colors
-from settings.path_settings import get_path_in, output_path
-from calc.vis_controls import pft_plot
+from settings import logical_settings, config, get_path_in, get_output_path, get_settings4plots_pft
+from libraries import get_interpol, get_data, get_upscaling_ba_veg_class, makefolder
+from calc import pft_plot
 # =============================   Personal functions   ==================
-# 1. read_data --> Reading burned area actual datasets (model simulations) and
-#                  converting them into OCN grid (720*300):
 def read_data(
                 # Input variables:
                 region:str,                       # Research domain (Global, Europe, Other..)
@@ -74,14 +69,19 @@ def read_data(
                 param_var:str,                    # NetCDF attributes for research datasets
                 linfo:bool,                       # Do you want to get more information about your NetCDF?
                 dtype:str,                        # Main source of incoming data (OCN, ESA)
+                uconfig:config,                   # User class with settings
                 # Output variables:
             ) -> xr.DataArray:                    # Research dataset presented on OCN grid
+    """Reading burned area actual datasets (model simulations) and converting
+       them into OCN grid (720*300):
+    """
+
     # -- Read in data:
     lst4data = get_data(
-        ipaths, lst4datasets, var, param_var, linfo = linfo, lresmp = True)
+        ipaths, lst4datasets, var, param_var, uconfig, linfo = linfo, lresmp = True)
     # Upscalling data 
     if dtype == 'OCN':
-        lst4data = get_interpol(lst4data, lst4datasets, region, var)  
+        lst4data = get_interpol(lst4data, lst4datasets, region, var, uconfig)
         ds_final = lst4data[0][var]
     else:
         ds_final = get_upscaling_ba_veg_class(
@@ -89,68 +89,83 @@ def read_data(
         )
     return ds_final
 
-# =============================   User settings   ==========================
-# -- Logical parameteres:
-# Do you want to get more information about data?
-linfo    = False
 
-# -- Main settings:
-# Research region ('Global', 'Europe', 'Tropics', 'NH')
-region   = 'Global'
-# OCN simulations: OCN_S2.1, _S2.2, _S3.1, _S3.2, _S2Prog, _S2Diag
-ocn_sims = ['OCN_S2Diag']
-# ESA-CCI data
-lst4esa  = ['BA_MODIS']
-# Research parameter
-var      = 'burned_area'
-# OCN NetCDF attribute name (burned area):
-ocn_var  = 'burnedArea'
-# OCN NetCDF attribute name (vegetation):
-ocn_pft  = 'vegtype'
-# ESA NetCDF attribute name (burned area):
-esa_var  = 'burned_area_in_vegetation_class'
-# ESA NetCDF attribute name (vegetation):
-esa_pft  = 'vegetation_class'
 
-# -- Settings for linear plot:
-plt_settings = {
-    # Settings for CROPS + BS and Flooded Trees:
-    'crops'   : {
-        # ptype    parameter    Relevant values
-        'legend' : ['OCN - CROPS + BS', 'ESA - CROPS + BS', 'ESA - Flooded Trees'],
-        'color'  : check_colors.get(3).get('color'),
-        'style'  : check_colors.get(3).get('style'),
-        'ylim'   : [  0.0, 1000.1, 250.0],
-    },
-    # Settings for evergreen trees (EBF and ENF):
-    'evgreen' : {
-        'legend' : ['OCN - ENF', 'OCN - EBF', 'ESA - ENF', 'ESA - EBF'],
-        'color'  : check_colors.get(4).get('color'),
-        'style'  : check_colors.get(4).get('style'),
-        'ylim'   : [  0.0, 500.1, 50.0],
-    },
-    # Settings for deciduous trees (DNF and DBF):
-    'decid'   : {
-        'legend' : ['OCN - DNF', 'OCN - DBF', 'ESA - DNF', 'ESA - DBF'],
-        'color'  : check_colors.get(4).get('color'),
-        'style'  : check_colors.get(4).get('style'),
-        'ylim'   : [  0.0, 2500.1, 500.0],
-    },
-    # Settings for grass and shrubs:
-    'grass'   : {
-        'legend' : ['OCN - Grass', 'ESA - Grass', 'ESA - Shrubs'],
-        'color'  : check_colors.get(3).get('color'),
-        'style'  : check_colors.get(3).get('style'),
-        'ylim'   : [  0.0, 3000.1, 500.0],
-    },
-}
-
-# 3.5 PFT groups for OCN and ESA-CCI MODIS data
-#             CROPS + BS   ENF  EBF  DNF  DBF  Grass  Shrub   Flooded
-ocn_groups = [    0.0   ,  0.0, 0.0, 0.0, 0.0, 0.0                   ]
-esa_groups = [    0.0   ,  0.0, 0.0, 0.0, 0.0, 0.0  ,  0.0  ,   0.0  ]
-#=============================    Main program   ==============================
 if __name__ == '__main__':
+# =============================   User settings   ==========================
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True, lnc_info = False)
+    # -- Load other logical parameters:
+    linfo = lsets.get('lnc_info') # Do you want to get more information about data?
+    # -- Load time settings:
+    tstart = '2001'
+    tstop = '2018'
+
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class(
+        ocn = [int(tstart), int(tstop)],
+        modis = [int(tstart), int(tstop)],
+    )
+    tlm = bcc.user_settings()
+    check_colors = get_settings4plots_pft(tlm)
+
+    # -- Main settings:
+    # Research region ('Global', 'Europe', 'Tropics', 'NH')
+    region   = 'Global'
+    # OCN simulations: OCN_S2.1, _S2.2, _S3.1, _S3.2, _S2Prog, _S2Diag
+    ocn_sims = ['OCN_S2Diag']
+    # ESA-CCI data
+    lst4esa  = ['BA_MODIS']
+    # Research parameter
+    var      = 'burned_area'
+    # OCN NetCDF attribute name (burned area):
+    ocn_var  = 'burnedArea'
+    # OCN NetCDF attribute name (vegetation):
+    ocn_pft  = 'vegtype'
+    # ESA NetCDF attribute name (burned area):
+    esa_var  = 'burned_area_in_vegetation_class'
+    # ESA NetCDF attribute name (vegetation):
+    esa_pft  = 'vegetation_class'
+
+    # -- Settings for linear plot:
+    plt_settings = {
+        # Settings for CROPS + BS and Flooded Trees:
+        'crops'   : {
+            # ptype    parameter    Relevant values
+            'legend' : ['OCN - CROPS + BS', 'ESA - CROPS + BS', 'ESA - Flooded Trees'],
+            'color'  : check_colors.get(3).get('color'),
+            'style'  : check_colors.get(3).get('style'),
+            'ylim'   : [  0.0, 1000.1, 250.0],
+        },
+        # Settings for evergreen trees (EBF and ENF):
+        'evgreen' : {
+            'legend' : ['OCN - ENF', 'OCN - EBF', 'ESA - ENF', 'ESA - EBF'],
+            'color'  : check_colors.get(4).get('color'),
+            'style'  : check_colors.get(4).get('style'),
+            'ylim'   : [  0.0, 500.1, 50.0],
+        },
+        # Settings for deciduous trees (DNF and DBF):
+        'decid'   : {
+            'legend' : ['OCN - DNF', 'OCN - DBF', 'ESA - DNF', 'ESA - DBF'],
+            'color'  : check_colors.get(4).get('color'),
+            'style'  : check_colors.get(4).get('style'),
+            'ylim'   : [  0.0, 2500.1, 500.0],
+        },
+        # Settings for grass and shrubs:
+        'grass'   : {
+            'legend' : ['OCN - Grass', 'ESA - Grass', 'ESA - Shrubs'],
+            'color'  : check_colors.get(3).get('color'),
+            'style'  : check_colors.get(3).get('style'),
+            'ylim'   : [  0.0, 3000.1, 500.0],
+        },
+    }
+
+    # 3.5 PFT groups for OCN and ESA-CCI MODIS data
+    #             CROPS + BS   ENF  EBF  DNF  DBF  Grass  Shrub   Flooded
+    ocn_groups = [    0.0   ,  0.0, 0.0, 0.0, 0.0, 0.0                   ]
+    esa_groups = [    0.0   ,  0.0, 0.0, 0.0, 0.0, 0.0  ,  0.0  ,   0.0  ]
+
+    #=============================    Main program   ==============================
     print('Program START')
     # -- Define input and output paths and create folder for results:
     # Important information:  pin_param - has None values in this script. Due to there
@@ -159,28 +174,31 @@ if __name__ == '__main__':
     #                         because of input path has correct name and pin_param is
     #                         unused in this script!
     # Input  ESA_CCI MODIS original data
-    pin_esa, esa_param  = get_path_in(lst4esa , 'burned_area')
+    pin_esa, esa_param  = get_path_in(lst4esa , 'burned_area', lsets)
     # Input OCN data
-    pin_ocn, ocn_param  = get_path_in(ocn_sims, 'firepft')
+    pin_ocn, ocn_param  = get_path_in(ocn_sims, 'firepft', lsets)
 
-    data_OUT = makefolder(output_path().get('check_ocn_pft'))
+    data_OUT = makefolder(get_output_path(lsets).get('check_ocn_pft'))
     print(f'Your data will be saved at {data_OUT}')
 
     # -- Get data for OCN and ESA-CCI MODIS:
-    ba4pft_ocn = read_data(region, ocn_sims, pin_ocn, var, [ocn_var], linfo,
-                           'OCN').sel(time = slice('2001', '2018'))
+    ba4pft_ocn = read_data(
+        region, ocn_sims, pin_ocn, var, [ocn_var], linfo,'OCN', tlm).sel(time = slice(tstart, tstop))
 
-    ba4pft_esa = read_data(region, lst4esa , pin_esa, var, [esa_var], linfo,
-                           'ESA').sel(time = slice('2001', '2018'))
+    ba4pft_esa = read_data(
+        region, lst4esa , pin_esa, var, [esa_var], linfo,'ESA', tlm).sel(time = slice(tstart, tstop))
 
-    # -- calc_group --> Get relevant data for corresponding plant types
     def calc_group(
-                        # Input variables:
-                        act_data:xr.DataArray,   # Research dataset
-                        pft_groups:list[int],    # PFT groups
-                        pft_name:str,            # PFT parameter
-                        # Output variables
-                   ) -> xr.DataArray:            # Processed data
+        act_data:xr.DataArray, pft_groups:list[int], pft_name:str) -> xr.DataArray:
+        """Get relevant data for corresponding plant types
+            **Input variables:**
+            act_data - Research dataset
+            pft_groups - PFT groups
+            pft_name - PFT parameter
+
+            **Output variables:**
+            DataArray -
+        """
         return act_data[:, pft_groups, :, :].sum(dim = {pft_name,'lat', 'lon'})
 
     # -- Create OCN groups:

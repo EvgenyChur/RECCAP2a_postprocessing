@@ -34,33 +34,37 @@ Version    Date       Name
            Set enviroments to personal modules, adapted to global MPI-BGC project
     1.5    2023-05-15 Evgenii Churiulin, MPI-BGC
            Code refactoring + transfered get_figure4lcc function to vis_controls module
+    1.6    2023-11-13 Evgwenii Churiulin, MPI-BGC
+           Updated code according to packedge import and changes in user_settings
 """
 
 # =============================     Import modules     ===================
-# 1.1: Standard modules
 import os
 import sys
+sys.path.append(os.path.join(os.getcwd(), '..'))
 import numpy as np
 import xarray as xr
-
-# 1.2 Personal module
-sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4pft import modis_pft
-from libraries.lib4sys_support import makefolder
-from libraries.lib4xarray import get_data
-from calc.vis_controls import get_figure4lcc
-from settings.path_settings import get_path_in, output_path
+import warnings
+warnings.filterwarnings("ignore")
+from settings import logical_settings, get_path_in, get_output_path, get_modis_pft, config
+from libraries import makefolder, get_data
+from calc import get_figure4lcc
 
 # =============================   Personal functions   ==================
-# 2.1: get_title_path --> Get actual plot subtitle for each ESA-CCI PFT
-def  get_title_path(
-        # Input variables:
-        veg_classes:list[dict],          # Settings for ESA-CCI PFT
-        numb:list[int],                  # Actual index of each ESA-CCI PFT
-        # OUTPUT variables:
-    ) -> list[str]:                      # Plot subtitles for each ESA-CCI PFT
+
+def  get_title_path(veg_classes:list[dict], numb:list[int]) -> list[str]:
+    """Get actual plot subtitle for each ESA-CCI PFT:
+
+    **Input variables:**
+    veg_classes - Settings for ESA-CCI PFT
+    numb - Actual index of each ESA-CCI PFT
+
+    **Output variables:**
+
+    title - Plot subtitles for each ESA-CCI PFT
+    """
     # -- Get subtitle for each PFT
-    title    = []  # Output titles
+    title = []  # Output titles
     for vclass in veg_classes:
         if vclass['index'] in (numb):
             title.append(vclass['veg_class'])
@@ -113,92 +117,99 @@ def get_trend(
             lst4trends.append(trends)
     return lst4trends
 
-# ================   User settings (have to be adapted)  ==================
 
-# -- Logical parameters:
-# Do you want to get more information about data?
-linfo = False
-# Activate algorithm for mean visualization?
-lmean_plot = True
-# Activate algorithm for std visualization?
-lstd_plot = True
-# Activate algorithm for trends visualization?
-ltrend_plot = True
-
-# -- Main settings:
-# Research dataset: (ESA-CCI MODISv5.0):
-datasets = ['BA_MODIS']
-# Research domain (Global, Europe, Tropics, NH, Other):
-region   = 'Global'
-# Research parameter:
-var      = 'burned_area'
-# NetCDF attribute research parameter (burned_area_in_vegetation_class):
-params   = ['burned_area_in_vegetation_class']
-
-# -- Plot settings:
-# Rows and columns numbers for collage plot (nrows*ncols):
-nrows = 3
-ncols = 3
-# Plot titles:
-nplt_mean  = 'Burned area annual MEAN for different PFT'
-nplt_std   = 'Burned area annual STD for different PFT'
-nplt_trend = 'Burned area TREND for different PFT'
-# Settings for subplots (limits and colormap): Option 1 - Visible changes data
-clb_lim1 = [
-    {'mode':'burned_area', 'param':'mean' , 'ymin':  0.0 , 'ymax':   0.04  , 'cbar' : 'hot_r' },
-    {'mode':'burned_area', 'param':'std'  , 'ymin':  0.0 , 'ymax':   0.02  , 'cbar' : 'hot_r' },
-    {'mode':'burned_area', 'param':'trend', 'ymin': -1e-4, 'ymax':   1e-4  , 'cbar' : 'RdBu_r'},
-]
-# Settings for subplots (limits and colormap): Option 2 - Lower values for burned area
-clb_lim2 = [
-    {'mode':'burned_area', 'param':'mean' , 'ymin':  0.0 , 'ymax':   0.004 , 'cbar' : 'hot_r' },
-    {'mode':'burned_area', 'param':'std'  , 'ymin':  0.0 , 'ymax':   0.002 , 'cbar' : 'hot_r' },
-    {'mode':'burned_area', 'param':'trend', 'ymin': -1e-5, 'ymax':   1e-5  , 'cbar' : 'RdBu_r'},
-]
-
-# -- Select PFT groups and get actual PFT names for each PFT:
-# Visible changes:
-lst1 = [0, 2, 3, 4, 5, 10, 11, 12, 14]
-# Small changes:
-lst2 = [1, 6, 7, 8, 9, 13, 15, 16, 17]
-vis_title   = get_title_path(modis_pft, lst1)
-invis_title = get_title_path(modis_pft, lst2)
-
-# =============================    Main program   ========================
 if __name__ == '__main__':
+    # ================   User settings (have to be adapted)  ==================
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True, lnc_info = False)
+    # -- Load other logical parameters:
+    linfo = lsets.get('lnc_info') # Do you want to get more information about data?
+    lmean_plot = True  # Activate algorithm for mean visualization?
+    lstd_plot = True   # Activate algorithm for std visualization?
+    ltrend_plot = True # Activate algorithm for trends visualization?
+
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
+    # -- Main settings:
+    # Research dataset: (ESA-CCI MODISv5.0):
+    datasets = ['BA_MODIS']
+    # Research domain (Global, Europe, Tropics, NH, Other):
+    region   = 'Global'
+    # Research parameter:
+    var      = 'burned_area'
+    # NetCDF attribute research parameter (burned_area_in_vegetation_class):
+    params   = ['burned_area_in_vegetation_class']
+
+    # -- Plot settings:
+    # Rows and columns numbers for collage plot (nrows*ncols):
+    nrows = 3
+    ncols = 3
+    # Plot titles:
+    nplt_mean  = 'Burned area annual MEAN for different PFT'
+    nplt_std   = 'Burned area annual STD for different PFT'
+    nplt_trend = 'Burned area TREND for different PFT'
+    # Settings for subplots (limits and colormap): Option 1 - Visible changes data
+    clb_lim1 = [
+        {'mode':'burned_area', 'param':'mean' , 'ymin':  0.0 , 'ymax':   0.04  , 'cbar' : 'hot_r' },
+        {'mode':'burned_area', 'param':'std'  , 'ymin':  0.0 , 'ymax':   0.02  , 'cbar' : 'hot_r' },
+        {'mode':'burned_area', 'param':'trend', 'ymin': -1e-4, 'ymax':   1e-4  , 'cbar' : 'RdBu_r'},
+    ]
+    # Settings for subplots (limits and colormap): Option 2 - Lower values for burned area
+    clb_lim2 = [
+        {'mode':'burned_area', 'param':'mean' , 'ymin':  0.0 , 'ymax':   0.004 , 'cbar' : 'hot_r' },
+        {'mode':'burned_area', 'param':'std'  , 'ymin':  0.0 , 'ymax':   0.002 , 'cbar' : 'hot_r' },
+        {'mode':'burned_area', 'param':'trend', 'ymin': -1e-5, 'ymax':   1e-5  , 'cbar' : 'RdBu_r'},
+    ]
+
+    # -- Select PFT groups and get actual PFT names for each PFT:
+    # Visible changes:
+    lst1 = [0, 2, 3, 4, 5, 10, 11, 12, 14]
+    # Small changes:
+    lst2 = [1, 6, 7, 8, 9, 13, 15, 16, 17]
+    # -- Load MODIS PFT table:
+    modis_pft = get_modis_pft(tlm)
+    vis_title   = get_title_path(modis_pft, lst1)
+    invis_title = get_title_path(modis_pft, lst2)
+
+
+    # =============================    Main program   ========================
     print('START program')
     # -- Define input and output paths and create folder for results:
-    ipaths, ip_par = get_path_in(datasets, var)
-    data_OUT = makefolder(output_path().get('ba_esa_pft'))
+    ipaths, ip_par = get_path_in(datasets, var, lsets)
+    data_OUT = makefolder(get_output_path(lsets).get('ba_esa_pft'))
     print(f'Your data will be saved at {data_OUT}')
     # -- OUTPUT names for figures:
-    pout = [# Group 1: PFT with visible changes in burned area (vis)
-            data_OUT + f'{region}_MEAN4BA_vis.png'   ,
-            data_OUT + f'{region}_STD4BA_vis.png'    ,
-            data_OUT + f'{region}_TREND4BA_vis.png'  ,
-            # Group 2: PFT with invisible or small changes in burned area (invis)
-            data_OUT + f'{region}_MEAN4BA_invis.png' ,
-            data_OUT + f'{region}_STD4BA_invis.png'  ,
-            data_OUT + f'{region}_TREND4BA_invis.png']
+    pout = [
+        # Group 1: PFT with visible changes in burned area (vis)
+        data_OUT + f'{region}_MEAN4BA_vis.png',
+        data_OUT + f'{region}_STD4BA_vis.png',
+        data_OUT + f'{region}_TREND4BA_vis.png',
+        # Group 2: PFT with invisible or small changes in burned area (invis)
+        data_OUT + f'{region}_MEAN4BA_invis.png',
+        data_OUT + f'{region}_STD4BA_invis.png',
+        data_OUT + f'{region}_TREND4BA_invis.png',
+    ]
 
     # -- Get initial data from NetCDF:
-    lst4data = get_data(ipaths, datasets, var, params, linfo = linfo)[0]
+    lst4data = get_data(ipaths, datasets, var, params, tlm, linfo = linfo)[0]
     # -- Select your parameter and get results:
     data = lst4data[params[0]]  # act data
-    lat  = data.lat.values      # latitude values
-    lon  = data.lon.values      # longitude values
-    # -- Get mean, std and time trends values for each PFT:
-    vis_lst4mean  ,   vis_lst4std = get_mean_std(data, modis_pft, lst1)
-    vis_lst4trend                 = get_trend(   data, modis_pft, lst1)
+    lat, lon = data.lat.values, data.lon.values  # latitude and longitude values
 
+    # -- Get mean, std and time trends values for each PFT:
+    vis_lst4mean, vis_lst4std = get_mean_std(data, modis_pft, lst1)
     invis_lst4mean, invis_lst4std = get_mean_std(data, modis_pft, lst2)
-    invis_lst4trend               = get_trend(   data, modis_pft, lst2)
+    vis_lst4trend = get_trend( data, modis_pft, lst1)
+    invis_lst4trend = get_trend( data, modis_pft, lst2)
 
     # -- Start visualization:
     # a. Plot: MEAN values
     if lmean_plot  == True:
         print('Working on collages for MEAN values \n')
         # Plot 1
+        print(region)
         get_figure4lcc(
             nrows, ncols, lon, lat, vis_lst4mean, var, 'mean', clb_lim1, region,
             vis_title, nplt_mean, pout[0],

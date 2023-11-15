@@ -21,135 +21,135 @@ Version    Date       Name
            Code refactoring
 """
 # =============================== Import modules =======================
-# -- Standard:
 import os
 import sys
+sys.path.append(os.path.join(os.getcwd(), '..'))
 import time
 import subprocess
 import numpy as np
 import pandas as pd
-# -- Personal:
-sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.user_settings import logical_settings
-from settings.path_settings import get_path_in, output_path
-from libraries.lib4sys_support import makefolder
-from libraries.lib4visualization import create_fast_xarray_plot as xrplot
-from libraries.lib4visualization import create_lplot_with_2axis as lplot2axis
-from libraries.lib4xarray import get_data, comp_area_lat_lon
-from libraries.lib4upscaling_support import get_upscaling_ba_veg_class
+
+from settings import logical_settings, get_path_in, get_output_path, config
+from libraries import makefolder, get_data, comp_area_lat_lon, get_upscaling_ba_veg_class
+from libraries import create_fast_xarray_plot as xrplot
+from libraries import create_lplot_with_2axis as lplot2axis
+
+
 # =============================== User functions =======================
 def get_data_vis(dataset, col):
     x = pd.concat(dataset, axis = 0)
     df = x.reset_index().set_index(x[0]).drop(['index', 0], axis = 1).astype('float')
     df.columns = [col]
     return df
-# ============================= Users settings =========================
-# -- Logical parameteres:
-# Do you want to calculate on cluster?
-lcluster = logical_settings[0]
-# Do you want to get more information about data?
-linfo = False
-# Do you have unzip raw files?
-lzero = False
-# Do you want to preprare new netcdf for OCN?
-nc_prep = True
-# Do you want to plot data?
-lplot = True
 
-# -- Get output paths and create folders for results:
-# Output path for new NetCDF data:
-data_out = makefolder(output_path().get('prep_ESA_data'))
-print(f'Your data will be saved at {data_out}')
-# Output path for figures:
-fig_out  = makefolder(output_path().get('prep_ESA_fig'))
-print(f'Your figures will be saved at {fig_out}')
 
-# -- Settings for plots:
-if lplot is True:
-    # -- Plot settings for linear plot:
-    user_line_settings = {
-        'labels'     : ['Total BA - 0.25 grid', 'Total BA frac - 0.25 grid',
-                        'Total BA - 0.5 grid' , 'Total BA frac - 0.5 grid'],
-        'colors'     : ['darkblue', 'royalblue', 'brown',  'red'],
-        'styles'     : [  '-.'    ,    '-'     ,   '--' ,   '-' ],
-        'columns'    : ['ba'      , 'baf'      ,   'ba' ,  'baf'],
-        'title'      : 'Comparison of burned area and fraction before interpolation and after',
-        'ylabel_ax1' : 'Total burned area, m2',
-        'ylabel_ax2' : 'Total burned area fraction',
-        'clr'        : 'black',
-        'fsize'      : 14.0,
-        'pad'        : 20.0,
-        'rotation'   :  0.0,
-        'loc_ax1'    : 'upper left',
-        'loc_ax2'    : 'upper right',
-        'leg_frameon': True,
-        'output'     : fig_out + '/fire_com.png',
-    }
-    # -- Settings for 2D maps
-    user_map_settings = {
-    'fire_025' : {
-        'robust'   : True,
-        'colormap' : 'hot_r',
-        'vmin'     :  0.0,
-        'vmax'     :  1.0,
-        'col'      : 'time',
-        'col_wrap' :  4,
-        'title'    : 'Fire fraction at 0.25 degree grid',
-        'output'   : '',
-        },
-    'fire_050' : {
-        'robust'   : True,
-        'colormap' : 'hot_r',
-        'vmin'     :  0.0,
-        'vmax'     :  1.0,
-        'col'      : 'time',
-        'col_wrap' :  4,
-        'title'    : 'Fire fraction at 0.5 degree grid',
-        'output'   : '',
-        },
-    }
 
-# -- Settings for available ESA-CCI data.
-#    NDEP always the same (use only for coordinates and attributes comparison)
-#years = np.arange(2001, 2021, 1)
-years  = np.arange(2001, 2003, 1)
-lparam = 'burned_area'                      # name of parameter which I'm using for reading and initial processing of data
-nvar   = 'burned_area_in_vegetation_class'  # NetCDF attribute is responsible for burned area by PFT
-npft   = 'vegetation_class'                 # NetCDF attribute is responsible for PFT
-
-# 2.5: Additional settings (don't change).
-esa_datasets  = ['ESA-CCL'] * len(years)    # one data for one year
-param_var     = [nvar]      * len(years)    # one data for one year
-ndep_datasets = ['NDEP']
-ret_coef      = 1e9                         # return original units (in xrlib.get_data - is 1e-9)
-nat_pft = 3
-
-if lcluster is True:
-    # Shell scripts for unzip and final post_processing (path was changed because of security reasons):
-    prep_unzip   = '../people/evchur/scripts/scripts_git/MPI-BGC/unzip_ESA.sh'
-    shell_script = '../people/evchur/scripts/scripts_git/MPI-BGC/postprocess_ESA.sh'
-
-# =============================    Main program   ======================
 if __name__ == '__main__':
+    # ============================= Users settings =========================
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True)
+    # -- Load other logical parameters:
+    lzero = False  # Do you have unzip raw files?
+    nc_prep = False # Do you want to preprare new netcdf for OCN?
+    lplot = False   # Do you want to plot data?
+
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
+    # -- Get output paths and create folders for results:
+    # Output path for new NetCDF data:
+    data_out = makefolder(get_output_path(lsets).get('prep_ESA_data'))
+    print(f'Your data will be saved at {data_out}')
+    # Output path for figures:
+    fig_out  = makefolder(get_output_path(lsets).get('prep_ESA_fig'))
+    print(f'Your figures will be saved at {fig_out}')
+
+    # -- Settings for plots:
+    if lplot:
+        # -- Plot settings for linear plot:
+        user_line_settings = {
+            'labels'     : ['Total BA - 0.25 grid', 'Total BA frac - 0.25 grid',
+                            'Total BA - 0.5 grid' , 'Total BA frac - 0.5 grid'],
+            'colors'     : ['darkblue', 'royalblue', 'brown',  'red'],
+            'styles'     : [  '-.'    ,    '-'     ,   '--' ,   '-' ],
+            'columns'    : ['ba'      , 'baf'      ,   'ba' ,  'baf'],
+            'title'      : 'Comparison of burned area and fraction before interpolation and after',
+            'ylabel_ax1' : 'Total burned area, m2',
+            'ylabel_ax2' : 'Total burned area fraction',
+            'clr'        : 'black',
+            'fsize'      : 14.0,
+            'pad'        : 20.0,
+            'rotation'   :  0.0,
+            'loc_ax1'    : 'upper left',
+            'loc_ax2'    : 'upper right',
+            'leg_frameon': True,
+            'output'     : fig_out + '/fire_com.png',
+        }
+        # -- Settings for 2D maps
+        user_map_settings = {
+        'fire_025' : {
+            'robust'   : True,
+            'colormap' : 'hot_r',
+            'vmin'     :  0.0,
+            'vmax'     :  1.0,
+            'col'      : 'time',
+            'col_wrap' :  4,
+            'title'    : 'Fire fraction at 0.25 degree grid',
+            'output'   : '',
+            },
+        'fire_050' : {
+            'robust'   : True,
+            'colormap' : 'hot_r',
+            'vmin'     :  0.0,
+            'vmax'     :  1.0,
+            'col'      : 'time',
+            'col_wrap' :  4,
+            'title'    : 'Fire fraction at 0.5 degree grid',
+            'output'   : '',
+            },
+        }
+
+    # -- Settings for available ESA-CCI data.
+    #    NDEP always the same (use only for coordinates and attributes comparison)
+    #years = np.arange(2001, 2021, 1)
+    years  = np.arange(2001, 2003, 1)
+    lparam = 'burned_area'                      # name of parameter which I'm using for reading and initial processing of data
+    nvar   = 'burned_area_in_vegetation_class'  # NetCDF attribute is responsible for burned area by PFT
+    npft   = 'vegetation_class'                 # NetCDF attribute is responsible for PFT
+
+    # 2.5: Additional settings (don't change).
+    esa_datasets  = ['ESA-CCL'] * len(years)    # one data for one year
+    param_var     = [nvar]      * len(years)    # one data for one year
+    ndep_datasets = ['NDEP']
+    ret_coef      = 1e9                         # return original units (in xrlib.get_data - is 1e-9)
+    nat_pft = 3
+
+    # -- Shell scripts for unzip and final post_processing:
+    if lsets.get('lcluster'):
+        prep_unzip = '../people/evchur/scripts/scripts_git/MPI-BGC/unzip_ESA.sh'
+        shell_script = '../people/evchur/scripts/scripts_git/MPI-BGC/postprocess_ESA.sh'
+
+    # =============================    Main program   ======================
     # -- Get input dataset paths and attributes (NDEP, MODIS):
-    ndep_pin, ndep_param = get_path_in(['NDEP'], 'ndep')
-    path_esa, esa_param  = get_path_in(['BA_MODIS'], 'burned_area_year')
+    ndep_pin, ndep_param = get_path_in(['NDEP'], 'ndep', lsets)
+    print(ndep_pin, '\n', ndep_param, '\n')
+    path_esa, esa_param  = get_path_in(['BA_MODIS'], 'burned_area_year', lsets)
+    print(path_esa, '\n', esa_param, '\n')
     # -- Unzip raw data:
-    if (lzero == True and lcluster == True):
+    if (lzero and lsets.get('lcluster')):
         rc = subprocess.call(prep_unzip, shell=True)
         time.sleep(30)
         print('Done. ESA-CCI data were unpacked')
     # -- Get actual data paths for ESA-CCI and NDEP data:
-    esa_pin  = []
-    esa_pout = []
-    for year in years:
-        esa_pin.append(path_esa[0] + f'_{year}.nc')
-        esa_pout.append(data_out   + f'ba_fraction_{year}.nc')
+    esa_pin = [f'{path_esa[0]}_{year}.nc' for year in years]
+    esa_pout = [f'{data_out}ba_fraction_{year}.nc' for year in years]
+
     # -- Get actual ESA-CCI and NDEP data:
-    ndep_data = get_data(ndep_pin, ndep_datasets, 'NDEP', 'ndep',
-                         linfo = linfo, lresmp = False        )[0]
-    esa_data  = get_data(esa_pin, esa_datasets, lparam, param_var,
-                         linfo = linfo, lresmp = False           )
+    ndep_data = get_data(
+        ndep_pin, ndep_datasets, 'NDEP', 'ndep', tlm, lresmp = False )[0]
+    esa_data  = get_data(
+        esa_pin, esa_datasets, lparam, param_var, tlm, lresmp = False)
 
     # -- Upscalling burned area data from 0.25 to 0.5 grid resolution:
     ba_fraction = [] # burned area fraction by pft
@@ -179,7 +179,7 @@ if __name__ == '__main__':
         tot_baf05.append(tbaf05)
 
     # -- Get monthly values of all natural PFT and save them into new NetCDF
-    if nc_prep is True:
+    if nc_prep:
         for year in range(len(ba_fraction)):
             # -- Get total burned fraction of all natural PFT
             ntba_pft = ba_fraction[year][:, nat_pft:, :,:].sum(dim = {npft})
@@ -213,7 +213,7 @@ if __name__ == '__main__':
             ntba_pft.to_netcdf(esa_pout[year])
 
     # -- Visualization:
-    if lplot is True:
+    if lplot:
         # -- Create comparison plots for burned area fraction on different grids (0.25 and 0.5):
         for year in range(len(years)):
             # Get relevant data
@@ -244,7 +244,7 @@ if __name__ == '__main__':
 
     # -- Run final postprocessing script:
     # Add land/water mask + Set missing values and calendar type
-    if lcluster is True:
+    if lsets.get('lcluster'):
         rc = subprocess.call(shell_script, shell = True)
         time.sleep(15)
         print('Done. ESA-CCI data were processed')

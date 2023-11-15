@@ -29,9 +29,9 @@ Version    Date       Name
 """
 
 # =============================== Import modules =======================
-# 1.1 Standard:
 import os
 import sys
+sys.path.append(os.path.join(os.getcwd(), '..'))
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -40,10 +40,9 @@ import subprocess
 import time
 import warnings
 warnings.filterwarnings("ignore")
-# -- Personal:
-sys.path.append(os.path.join(os.getcwd(), '..'))
-from libraries.lib4sys_support import makefolder
-from settings.user_settings import logical_settings, domain_lim
+from settings import logical_settings, get_settings4domains, config
+from libraries import makefolder
+
 # =============================== User functions =======================
 
 # -- get_paths --> get actual path to the LAI datasets
@@ -63,7 +62,7 @@ def get_paths(
     lst_yr   = grid_settings.get(dataset)[3]
 
     # -- Define output path:
-    if lcluster is True:
+    if lcluster:
         main_in  = main  + '/data/DataStructureMDI/DATA/grid/Global'
         main_out = main  + '/scratch/evchur/LAI'
         # Datasets paths (except OCN simulations): 
@@ -103,10 +102,10 @@ def get_paths(
                 'dif_pout': main + f'/GLOBMAP_LAI_{grid_out}_monthly/GLOBMAP_LAI.{grid_out}.{fst_yr}_{lst_yr}.nc',
             }
         }
-    # -- Get actual data paths for datasets:
-    path_in   = catalog.get(dataset).get('pin')       # input path
-    path_out  = catalog.get(dataset).get('pout')      # output path (data)
-    dpath_out = catalog.get(dataset).get('dif_pout')  # output path (diff)
+    # -- Get actual data paths for datasets (pin, pout, pout_diff):
+    path_in = catalog.get(dataset).get('pin')
+    path_out = catalog.get(dataset).get('pout')
+    dpath_out = catalog.get(dataset).get('dif_pout')
     return path_in, path_out, dpath_out
 
 # -- prep_data --> Rename key attributes of NetCDF files and re-interpolation
@@ -120,8 +119,11 @@ def prep_data(
         lst_year:str,              # Last year.
         period:str,                # Additional prefix in data.
         mode:str,                  # Version of the LAI dataset.
+        uconfig:config,            # User class with settings
         # Output variables:
     ) -> xr.DataArray:             # LAI dataset re-interpolated to OCN grid
+    # -- Load domains:
+    domain_lim = get_settings4domains(uconfig)
 
     # -- Select all available years from the folder:
     years = np.arange(fst_year, lst_year + 1, 1)
@@ -206,70 +208,79 @@ def get_plot(
     plt.close(fig)
     plt.gcf().clear()
 
-# ============================= Users settings ========================
-# -- Logical parameters (True / False):
-# Do you want to work on cluster?
-lcluster = logical_settings[0]
-# Do you want to get annual LTDR data from daily?
-lLTDR_annual = False
-# Preprocessing of LTDR data?
-lproc_ltdr = True
-# Preprocessing of MODIS data?
-lproc_modis = True
-# Preprocessing of GLOBMAP data?
-lproc_globmap = True
-# Do you want to compare datasets and get collage plot?
-ldiff = True
 
-# -- Define actual data paths
-# Research domain:
-region  = 'Global'
-#                 Dataset     input grid   output grid   Available years
-#                              (size)        (size)        first    last
-grid_settings = {'LTDR'    : ['7200.3600', '720.300'   ,   1981,    2020],
-                 'MODIS'   : [ '720.360' , '720.300'   ,   2000,    2020],
-                 'GLOBMAP' : [ '720.360' , '720.300'   ,   1982,    2020]}
-
-if lcluster is True:
-    main     = '../'                                                            # This path was changed because of security reasons
-    # OCN datasets:
-    ocn_in   = main + '/work_1/RECCAP2/NRT/OCNout/Fire/OCN_S2.1_lai.nc'
-    # Output:
-    diff_out = main + '/scratch/evchur/LAI/collage_lai_diff.png'
-else:
-    main     = 'C:/Users/evchur/Desktop/DATA/LAI'
-    ocn_in   = main[0:-4] + '/OCN_fire/RECCAP_DATA/OCN_S2.1_lai.nc'
-    diff_out = main       + '/collage_lai_diff.png'
-
-# -- Define settings for collage plot:
-if ldiff == True:
-    tlim = [2001, 2020]
-    # Settings for colage plot
-    clr = 'black'
-    fsize = 14.0
-    lpab = 20.0
-    vmin_lim = 0.0
-    vmax_lim = 6.0
-    diff_lim = 0.6
-    # Plot titles for the plot
-    plot_titles = ['LTDR', 'MODIS'  , 'DIFF (LTDR - MODIS)'  , 
-                   'LTDR', 'GLOBMAP', 'DIFF (LTDR - GLOBMAP)']
-    # y and x labels:
-    ylabels = ['Latitude', '','', 'Latitude' , ''         , ''         ]
-    xlabels = [''        ,'' ,'', 'Longitude', 'Longitude', 'Longitude']
-
-# -- Additional settings:
-ftime_plot  = "2000" # time filter for plots (from fst_yr      to ftime_plot)
-ftime_plot2 = "2001" # time filter for plots (from ftime_plot2 to lst_yr    )
-# This path was changed because of security reasons
-shell_script = '../people/evchur/scripts/scripts_git/MPI-BGC/preprocessing/yearmean_lai.sh'
-
-# =============================    Main program   =======================
 if __name__ == '__main__':
+    # ============================= Users settings ========================
+    # -- Load basic logical settings:
+    lsets = logical_settings(lcluster = True, lnc_info = False)
+    # Do you want to work on cluster?
+    lcluster = lsets.get('lcluster')
+    # Do you want to get annual LTDR data from daily?
+    lLTDR_annual = False
+    # Preprocessing of LTDR data?
+    lproc_ltdr = True
+    # Preprocessing of MODIS data?
+    lproc_modis = True
+    # Preprocessing of GLOBMAP data?
+    lproc_globmap = True
+    # Do you want to compare datasets and get collage plot?
+    ldiff = True
+
+    # -- Load basic user settings:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
+    # -- Define actual data paths
+    # Research domain:
+    region  = 'Global'
+    #                 Dataset     input grid   output grid   Available years
+    #                              (size)        (size)        first    last
+    grid_settings = {'LTDR'    : ['7200.3600', '720.300'   ,   1981,    2020],
+                     'MODIS'   : [ '720.360' , '720.300'   ,   2000,    2020],
+                     'GLOBMAP' : [ '720.360' , '720.300'   ,   1982,    2020]}
+
+    if lcluster:
+        main = '..I'
+        # OCN datasets:
+        ocn_in = f'{main}/work_1/RECCAP2/NRT/OCNout/Fire/OCN_S2.1_lai.nc'
+        # Output:
+        diff_out = f'{main}/scratch/evchur/LAI/collage_lai_diff.png'
+    else:
+        main = 'C:/Users/evchur/Desktop/DATA/LAI'
+        ocn_in = f'{main[0:-4]}/OCN_fire/RECCAP_DATA/OCN_S2.1_lai.nc'
+        diff_out = f'{main}/collage_lai_diff.png'
+
+    # -- Define settings for collage plot:
+    if ldiff:
+        tlim = [2001, 2020]
+        # Settings for colage plot
+        clr = 'black'
+        fsize = 14.0
+        lpab = 20.0
+        vmin_lim = 0.0
+        vmax_lim = 6.0
+        diff_lim = 0.6
+        # Plot titles for the plot
+        plot_titles = ['LTDR', 'MODIS'  , 'DIFF (LTDR - MODIS)'  ,
+                       'LTDR', 'GLOBMAP', 'DIFF (LTDR - GLOBMAP)']
+        # y and x labels:
+        ylabels = ['Latitude', '','', 'Latitude' , '', '']
+        xlabels = ['', '', '', 'Longitude', 'Longitude', 'Longitude']
+
+    # -- Additional settings:
+    ftime_plot  = "2000" # time filter for plots (from fst_yr      to ftime_plot)
+    ftime_plot2 = "2001" # time filter for plots (from ftime_plot2 to lst_yr    )
+
+    shell_script = '../people/evchur/scripts/scripts_git/MPI-BGC/preprocessing/yearmean_lai.sh'
+
+    # =============================    Main program   =======================
     # -- Get input paths:
-    ltdr_in, ltdr_out, ltdr_lai_path          = get_paths(main, 'LTDR'   , grid_settings, lcluster)
-    modis_in, modis_out, modis_lai_path       = get_paths(main, 'MODIS'  , grid_settings, lcluster)
-    globmap_in, globmap_out, globmap_lai_path = get_paths(main, 'GLOBMAP', grid_settings, lcluster)
+    ltdr_in, ltdr_out, ltdr_lai_path = get_paths(
+        main, 'LTDR', grid_settings, lcluster)
+    modis_in, modis_out, modis_lai_path = get_paths(
+        main, 'MODIS', grid_settings, lcluster)
+    globmap_in, globmap_out, globmap_lai_path = get_paths(
+        main, 'GLOBMAP', grid_settings, lcluster)
 
     # -- Get annual values for LTDR dataset based on daily values:
     if (lLTDR_annual is True and lcluster is True):
@@ -282,58 +293,65 @@ if __name__ == '__main__':
           .assign_coords({'time' : pd.date_range("1950-01-01", "2022-01-01", freq = "M")})
           .sel(time=slice('1980','2020'))
     )
+
     # -- Get LTDR data:
-    if lproc_ltdr is True:
+    if lproc_ltdr:
         dataset = 'LTDR'
         fst_yr  = grid_settings.get(dataset)[2]
         lst_yr  = grid_settings.get(dataset)[3]
         step    = 'annual'
         # Get LTDR data and save them into NetCDF:
         mean_ltdr  = prep_data(
-            ds_ocn, ltdr_in, ltdr_out, fst_yr, lst_yr, step, dataset)
+            ds_ocn, ltdr_in, ltdr_out, fst_yr, lst_yr, step, dataset, tlm)
         # Get LTDR plot:
         get_plot(mean_ltdr['lai'], f"{fst_yr}", ftime_plot , ltdr_out, 'collage')
         get_plot(mean_ltdr['lai'], ftime_plot2, f'{lst_yr}', ltdr_out, 'collage')
         get_plot(mean_ltdr['lai'], f'{fst_yr}', f'{lst_yr}', ltdr_out, 'mean')
+
     # -- Get MODIS data:
-    if lproc_modis is True:
+    if lproc_modis:
         dataset  = 'MODIS'
         fst_yr   = grid_settings.get(dataset)[2]
         lst_yr   = grid_settings.get(dataset)[3]
         step     = 'monthly'
-        # Get MODIS data and save them into NetCDF
+        # -- Get MODIS data and save them into NetCDF
         modis_lai  = prep_data(
-            ds_ocn, modis_in, modis_out, fst_yr, lst_yr, step, dataset)
-        # Get MODIS plot
+            ds_ocn, modis_in, modis_out, fst_yr, lst_yr, step, dataset, tlm)
+        # -- Get MODIS plot
         mean_mod = modis_lai.resample(time = 'A').mean('time')
         get_plot(mean_mod['lai'], f'{fst_yr}', f'{lst_yr}', modis_out, 'collage')
         get_plot(mean_mod['lai'], f'{fst_yr}', f'{lst_yr}', modis_out, 'mean')
+
     # -- Get GLOBMAP data:
-    if lproc_globmap == True:
+    if lproc_globmap:
         dataset = 'GLOBMAP'
         fst_yr  = grid_settings.get(dataset)[2]
         lst_yr  = grid_settings.get(dataset)[3]
         step    = 'monthly'
         # Get GLOBMAP data and save them into NetCDF
         globmap_lai = prep_data(
-            ds_ocn, globmap_in, globmap_out, fst_yr, lst_yr, step, dataset)
+            ds_ocn, globmap_in, globmap_out, fst_yr, lst_yr, step, dataset, tlm)
         # Get GLOBMAP plot:
         mean_glb = globmap_lai.resample(time = 'A').mean('time')
         get_plot(mean_glb['lai'], f'{fst_yr}', ftime_plot , globmap_out, 'collage')
         get_plot(mean_glb['lai'], ftime_plot2, f'{lst_yr}', globmap_out, 'collage')
         get_plot(mean_glb['lai'], f'{fst_yr}', f'{lst_yr}', globmap_out, 'mean')
+
     # -- Create collage for LAI difference:
-    if ldiff == True:
+    if ldiff:
         # -- Get data from datasets:
-        ltdr_mean    = data4diff(ltdr_lai_path   , tlim)
-        modis_mean   = data4diff(modis_lai_path  , tlim)
+        ltdr_mean = data4diff(ltdr_lai_path, tlim)
+        modis_mean = data4diff(modis_lai_path, tlim)
         globmap_mean = data4diff(globmap_lai_path, tlim)
+
         # -- Get difference (LTDR - MODIS or GLOBMAP):
         diff_lm = ltdr_mean - modis_mean
         diff_lg = ltdr_mean - globmap_mean
+
         # -- Create plots and prepare data for that:
         lst4lai = [ltdr_mean, modis_mean  , diff_lm,
                    ltdr_mean, globmap_mean, diff_lg]
+
         # -- Get fast LAI difference view:
         fig = plt.figure(figsize = (14,10))
         # Create grid
@@ -368,4 +386,4 @@ if __name__ == '__main__':
         plt.close(fig)
         plt.gcf().clear()
     print('END program')
-# ============================== Program END  =========================
+    # ============================== Program END  =========================

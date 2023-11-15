@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+__all__ = [
+    'weighted_temporal_mean',
+    'comp_area_lat_lon',
+    'read_ocn',
+    'read_jules',
+    'read_orchidee',
+    'get_data',
+    'get_interpol',
+    'annual_mean',
+]
 """
 Module with functions for reading and processing data from NetCDF files:
     a. weighted_temporal_mean --> Calculating the yearly average with the
@@ -46,43 +56,43 @@ Version    Date       Name
            ORCHIDEE data were created.
     1.5    2023-05-05 Evgenii Churiulin, MPI-BGC
            Code refactoring
+    1.6    2023-11-10 Evgenii Churiulin, MPI-BGC
+           Adapted library for package import and added the user class with settings
 """
 # =============================     Import modules     ==================
-# -- Standard modules:
 import os
 import sys
+sys.path.append(os.path.join(os.getcwd(), '..'))
 import numpy as np
 import pandas as pd
 import xarray as xr
 from typing import Optional
 import warnings
 warnings.filterwarnings("ignore")
-
-# -- Personal modules:
-sys.path.append(os.path.join(os.getcwd(), '..'))
-from settings.user_settings import time_limits, domain_lim, psets
-from settings.path_settings import get_path_in
-import libraries.lib4upscaling_support as lib4ups
+from settings import (get_path_in, get_settings4ds_time_limits,
+    get_settings4domains,get_settings4ocn_orc_ndep,config, logical_settings)
+import lib4upscaling_support as lib4ups
 # =============================   Personal functions   ==================
 
-# 2.1 weighted_temporal_mean --> Calculating the yearly average with the
-#                                corresponding weights of days in each month.
-def weighted_temporal_mean(
-        # Input variables:
-        ds:xr.DataArray,               # Input data
-        var:str,                       # Research variable
-        # OUTPUT variables:
-        ) -> xr.DataArray:             # The weighted average
+def weighted_temporal_mean(ds:xr.DataArray, var:str) -> xr.DataArray:
+    """Calculating the yearly average with the corresponding weights of days in each month.
+
+        Input:
+        ds -> Input data
+        var -> Research variable
+        Output:
+        average_weighted_temp -> The weighted average dataArray
+    """
     # -- Determine the month length:
     month_length = ds.time.dt.days_in_month
     # -- Calculate the weights:
     wgts = month_length.groupby("time.year") / month_length.groupby("time.year").sum()
     # -- Make sure the weights in each year add up to 1:
-    test = (pd.DataFrame(wgts.groupby("time.year")
-                             .sum(xr.ALL_DIMS)
-                             .values
-                         ).apply(lambda x: x.mean())[0]
-           )
+    test = (
+        pd.DataFrame(
+            wgts.groupby("time.year").sum(xr.ALL_DIMS).values
+        ).apply(lambda x: x.mean())[0]
+    )
 
     if test == 1:
         print('Sum of each year’s weights is equal to 1!')
@@ -104,17 +114,20 @@ def weighted_temporal_mean(
     average_weighted_temp = average_weighted_temp.to_dataset(name = var)
     return average_weighted_temp
 
-# 2.2 comp_area_lat_lon --> Create mesh grid for actual coordinates
-#                           Author: Ana Bastos
-def comp_area_lat_lon(
-        # Input variables:
-        lat:np.array,                 # Latitude values from NetCDF file
-        lon:np.array,                 # Longitude values from NetCDF file
-        # OUTPUT variables:
-    ) -> np.array:                    # area 2D array.
+
+def comp_area_lat_lon(lat:np.array, lon:np.array) -> np.array:
+    """ Create mesh grid for actual coordinates:
+
+        Author: Ana Bastos
+
+        Input:
+        lat, lon -> Latitude and Longitude values from NetCDF file
+        Output:
+        area -> area 2D array.
+    """
     # Start computations:
     radius = 6.37122e6 # in meters
- 
+
     lat  = np.squeeze(lat); lon = np.squeeze(lon)
     nlat = len(lat)
     nlon = len(lon)
@@ -141,80 +154,92 @@ def comp_area_lat_lon(
         area = -1 * area
     return area
 
-# 2.3 read_ocn --> Read NetCDF data with OCN model information and convert
-#                  units to the same units as JULES and ORCHIDEE models
+
 def read_ocn(
+    path:str, ds_name:str, param:str, var:str, uconfig:config) -> xr.DataArray:
+    """Read NetCDF data with OCN model information and convert
+    units to the same units as JULES and ORCHIDEE models:
+
         # Input variables:
-        path:str,                           # Input path
-        ds_name:str,                        # Dataset name
-        param:str,                          # Attribute name of the research parameter in current NetCDF
-        var:str,                            # Attribute name for the new dataset and futher computations
+        path - Input path
+        ds_name - Dataset name
+        param - Attribute name of the research parameter in current NetCDF
+        var - Attribute name for the new dataset and futher computations
+        uconfig - Class with user settings
         # OUTPUT variables:
-    ) -> xr.DataArray :                     # Research dataset with correct units
+        nc - Research dataset with correct units
+    """
     # -- Local variables
     sec_in_hour = 3600.0      # number of seconds in hour
     hour_in_day = 24.0        # number of hours in day
     g_in_kg     = 1000.0      # gramms in 1 kg
     rec_coef    = 1e-9        # m2 to 1000 km2
-    
+    # Dataset time limits (correct format):
+    ds_tlm = get_settings4ocn_orc_ndep(uconfig)
     # -- Read data
     nc = (
         xr.open_dataset(path, decode_times = False)
-          .assign_coords({'time': pd.date_range(psets.get(ds_name)[0],
-                                                psets.get(ds_name)[1],
-                                         freq = psets.get(ds_name)[2])}))
-
+          .assign_coords(
+            {'time': pd.date_range(
+                ds_tlm.get(ds_name)[0],
+                ds_tlm.get(ds_name)[1],
+                freq = ds_tlm.get(ds_name)[2],
+                )
+            }
+        )
+    )
     # -- Add a new field with area information to current datasets
     nc = nc.assign(xr.Dataset({'area': (('lat', 'lon'),
                       comp_area_lat_lon(nc.lat.values, nc.lon.values))},
                       coords = {'lat' : nc.lat.values, 'lon' : nc.lon.values}))
-
     # -- convert units to correct format
-    if var in ('gpp', 'npp', 'fFire', 'nbp', 'nee'):    
+    if var in ('gpp', 'npp', 'fFire', 'nbp', 'nee'):
         # Convert kg C m-2 s-1  to gC m-2 yr-1
-        nc[param] = (nc[param] * g_in_kg * hour_in_day * sec_in_hour *   
+        nc[param] = (nc[param] * g_in_kg * hour_in_day * sec_in_hour *
                      nc[param].time.dt.days_in_month)
-
     elif var == 'burned_area':
         nc['burned_area'] = (nc[param] * nc['area'] * rec_coef * 
-                             nc[param].time.dt.days_in_month)    
+                             nc[param].time.dt.days_in_month)
     #else:  
-        # cVeg and LAI parameters should be the same as it was before    
+        # cVeg and LAI parameters should be the same as it was before
+
+    #print(len(nc[var]))
+    #nc = nc.sel(time = slice('1960-01-01','2023-10-01'))
+    #print(len(nc[var]))
     return nc
 
-# 2.4 read_jules --> Read NetCDF data with JULES model information and convert
-#                    units to the same units as OCN and ORCHIDEE models
+
 def read_jules(
+    path:str, ds_name:str, param:str,var:str) -> xr.DataArray:
+    """Read NetCDF data with JULES model information and convert
+       units to the same units as OCN and ORCHIDEE models:
+
         # Input variables:
-        path:str,                           # Input path
-        ds_name:str,                        # Dataset name
-        param:str,                          # Attribute name of the research parameter in current NetCDF
-        var:str,                            # Attribute name for the new dataset and futher computations
+        path - Input path
+        ds_name - Dataset name
+        param - Attribute name of the research parameter in current NetCDF
+        var - Attribute name for the new dataset and futher computations
         # OUTPUT variables:
-    ) -> xr.DataArray :                     # Research dataset with correct units
+        nc - Research dataset with correct units
+    """
     # -- Local variables
     sec_in_hour = 3600.0      # number of seconds in hour
     hour_in_day = 24.0        # number of hours in day
     g_in_kg     = 1000.0      # gramms in 1 kg
     rec_coef    = 1e-9        # m2 to 1000 km2
-
     # -- Read data
-    nc = xr.open_dataset(path)  
-
+    nc = xr.open_dataset(path)
     # -- Rename attributes
     #nc = nc.rename({'longitude':'lon', 'latitude':'lat'})
-
     # -- Add a new field with area information to current datasets
     nc = nc.assign(xr.Dataset({'area': (('lat', 'lon'),
                       comp_area_lat_lon(nc.lat.values, nc.lon.values))},
                       coords = {'lat' : nc.lat.values, 'lon' : nc.lon.values}))
-
     # -- convert units to correct format
     if var in ('gpp', 'npp', 'fFire', 'nbp'):
         # Convert kg C m-2 s-1  to gC m-2 yr-1
         nc[param] = (nc[param] * g_in_kg * hour_in_day  * sec_in_hour * 
                      nc[param].time.dt.days_in_month)
-
     elif var == 'burned_area':
         nc['burned_area'] = ((nc[param] / 100) * nc['area'] * rec_coef) #*
                              #nc[param].time.dt.days_in_month)# * hour_in_day * 
@@ -224,73 +249,87 @@ def read_jules(
     return nc
 
 
-# 2.5 read_orchidee --> Read NetCDF data with ORCHIDEE model information and
-#                       convert units to the same units as OCN and JULES models
 def read_orchidee(
-        # Input variables:
-        path:str,                           # Input path
-        ds_name:str,                        # Dataset name
-        param:str,                          # Attribute name of the research parameter in current NetCDF
-        var:str,                            # Attribute name for the new dataset and futher computations
-        # OUTPUT variables:
-    ) -> xr.DataArray :                     # Research dataset with correct units
+    path:str, ds_name:str, param:str, var:str, uconfig:config) -> xr.DataArray :
+    """Read NetCDF data with ORCHIDEE model information and convert units to the
+        same units as OCN and JULES models
+
+        Input variables:
+
+        path - Input path
+        ds_name - Dataset name
+        param - Attribute name of the research parameter in current NetCDF
+        var - Attribute name for the new dataset and futher computations
+        uconfig - Class with user settings
+
+        OUTPUT variables:
+        nc - Research dataset with correct units
+    """
     # -- Local variables
     nan_values  = 9.96921e+36 # nan values in dataset
     sec_in_hour = 3600.0      # number of seconds in hour
     hour_in_day = 24.0        # number of hours in day
     g_in_kg     = 1000.0      # gramms in 1 kg
     rec_coef    = 1e-9        # m2 to 1000 km2
-
+    # Dataset time limits (correct format):
+    ds_tlm = get_settings4ocn_orc_ndep(uconfig)
     # -- Read data
     nc_orh = (
         xr.open_dataset(path, decode_times = False)
-          .assign_coords({'time': pd.date_range(psets.get(ds_name)[0],
-                                                psets.get(ds_name)[1],
-                                         freq = psets.get(ds_name)[2])})
+          .assign_coords({'time': pd.date_range(ds_tlm.get(ds_name)[0],
+                                                ds_tlm.get(ds_name)[1],
+                                         freq = ds_tlm.get(ds_name)[2])})
     )
-
     # -- Rename attributes
     nc_orh = nc_orh.rename({'longitude':'lon', 'latitude':'lat'})
-
     # -- Add a new field with area information to current datasets
     nc_orh = nc_orh.assign(xr.Dataset({'area': (('lat', 'lon'),
                               comp_area_lat_lon(nc_orh.lat.values,
                                                 nc_orh.lon.values))},
                               coords = {'lat' : nc_orh.lat.values,
-                                        'lon' : nc_orh.lon.values}))    
-    # -- Replace NaN values to NaN
+                                        'lon' : nc_orh.lon.values}))
+    # -- Replace NaN values to NaN:
     nc = nc_orh.where(nc_orh[param] != nan_values)
-
-    # -- convert units to correct format
+    # -- Convert units to correct format:
     if var in ('gpp', 'fFire', 'nbp'):
         # Convert kg C m-2 s-1  to gC m-2 yr-1
-        nc[param] = (nc[param] * g_in_kg * hour_in_day  * sec_in_hour * 
+        nc[param] = (nc[param] * g_in_kg * hour_in_day * sec_in_hour *
                      nc[param].time.dt.days_in_month)
-  
     elif var == 'burned_area':
-        nc['burned_area'] = (nc[param] * nc['area'] * rec_coef *
-                              nc[param].time.dt.days_in_month)
-    #else:  
-        # cVeg and LAI parameters should be the same as it was before
+        nc['burned_area'] = (
+            nc[param] * nc['area'] * rec_coef * nc[param].time.dt.days_in_month)
     return nc
 
 
-# 2.6 get_data -> Open NetCDF data, get initial information about data from file
-#                 and run algorithms for an initial data preprocessing
 def get_data(
-        # Input variables:
-        lst4pathin:list[str],                  # Dataset paths
-        lst4dsnames:list[str],                 # Dataset names
-        var:str,                               # Research parameter
-        param_var:list[str],                   # Name of the research parameter into actual dataset
-        linfo: Optional[bool] = False,         # Do you want to get information about NetCDF? Default is False
-        lresmp: Optional[bool] = True,         # Do you want to get annual values? Default is True
-        # OUTPUT variables:
-    ) -> list[xr.DataArray]:                   # Preprocessed data for each dataset
+        lst4pathin:list[str],
+        lst4dsnames:list[str],
+        var:str,
+        param_var:list[str],
+        user_params: config,
+        linfo: Optional[bool] = False,
+        lresmp: Optional[bool] = True,
+    ) -> list[xr.DataArray]:
+    """Open NetCDF data, get initial information about data from file and run
+        algorithms for an initial data preprocessing
+
+        Input variables:
+
+        lst4pathin - Dataset paths
+        lst4dsnames - Dataset names
+        var - Research parameter
+        param_var - Name of the research parameter into actual dataset
+        user_params - User settings (class object)
+        linfo - Do you want to get information about NetCDF? Default is False
+        lresmp - Do you want to get annual values? Default is True
+
+        OUTPUT variables:
+        nc_data - Preprocessed data for each dataset
+    """
     # -- Local variables:
     ocn_id = 'OCN'
     jul_id = 'JUL'
-    orc_if = 'ORC'
+    orc_id = 'ORC'
 
     # -- Recalculation coefficients:
     rec_coef = 1e-9  # m2 in 1000 km2
@@ -303,27 +342,26 @@ def get_data(
         # -- Read and convert units of OCN and NDEP data:
         if ((lst4dsnames[i][0:3] == ocn_id) or (lst4dsnames[i] == 'NDEP')):
             ncfile = read_ocn(
-                lst4pathin[i], lst4dsnames[i], param_var[i], var
-            )
+                lst4pathin[i], lst4dsnames[i], param_var[i], var, user_params)
         # -- Read and convert units of JULES data:
         elif lst4dsnames[i][0:3] == jul_id:
-            ncfile = read_jules(
-                lst4pathin[i], lst4dsnames[i], param_var[i], var
-            )
+            ncfile = read_jules(lst4pathin[i], lst4dsnames[i], param_var[i], var)
         # -- Read and convert units of ORCHIDEE data:
-        elif lst4dsnames[i][0:3] == orc_if:
+        elif lst4dsnames[i][0:3] == orc_id:
             ncfile = read_orchidee(
-                lst4pathin[i], lst4dsnames[i], param_var[i], var
-            )
+                lst4pathin[i], lst4dsnames[i], param_var[i], var, user_params)
         else:
             # -- Read satellute datasets and other model experiments
             ncfile = xr.open_dataset(lst4pathin[i])
             # -- Add a new field with area information to current datasets
-            ncfile = ncfile.assign(xr.Dataset({'area': (('lat', 'lon'),
-                                      comp_area_lat_lon(ncfile.lat.values,
-                                                        ncfile.lon.values))},
-                                      coords = {'lat' : ncfile.lat.values,
-                                                'lon' : ncfile.lon.values}))
+            ncfile = ncfile.assign(
+                xr.Dataset(
+                    {'area': (('lat', 'lon'),
+                        comp_area_lat_lon(ncfile.lat.values,ncfile.lon.values))
+                    },
+                coords = {'lat' : ncfile.lat.values, 'lon' : ncfile.lon.values}
+                )
+            )
             # -- Covert units to correct format:
 
             # a. Fire datasets: Original data from BA_AVHRR, GFED4.1s are in 
@@ -331,8 +369,8 @@ def get_data(
             #    BA_MODIS are burned area  
             if var == 'burned_area':
                 if lst4dsnames[i] in ('GFED4.1s', 'GFED_TOT', 'GFED_FL'):
-                    ncfile['burned_area'] = (ncfile[param_var[i]] * 
-                                             ncfile['area'] * rec_coef)
+                    ncfile['burned_area'] = (
+                        ncfile[param_var[i]] * ncfile['area'] * rec_coef)
                 else:
                     # -- MODIS data has original values 
                     ncfile[param_var[i]] = ncfile[param_var[i]] * rec_coef
@@ -356,22 +394,38 @@ def get_data(
                 ncfile = ncfile.resample(time = 'A').sum('time')
         # -- Add data to the new list
         nc_data.append(ncfile)
-    return nc_data  
+    return nc_data
 
 
-# 2.7 get_interpolation --> Get data from NetCDF at the same grid as OCN
 def get_interpol(
-        # Input variables:
-        lst4data:list[xr.DataArray],     # Data from the actual datasets
-        lst4dsnames:list[str],           # Names of the research datasets
-        domain:str,                      # Research region
-        var:str,                         # Research parameter.
-        # OUTPUT variables:
-    ) -> list[xr.DataArray]:             # Results of reinterpolation
+        lst4data:list[xr.DataArray],
+        lst4dsnames:list[str],
+        domain:str,
+        var:str,
+        user_params: config,
+    ) -> list[xr.DataArray]:
+    """Get data from NetCDF at the same grid as OCN:
+
+    Input variables:
+
+    lst4data - Data from the actual datasets
+    lst4dsnames -Names of the research datasets
+    domain - Research region
+    var - Research parameter.
+    user_params - User settings (class object)
+
+    OUTPUT variables:
+
+    grid4domain - Results of reinterpolation
+    """
+
     # -- Local variables:
     ocn_id = 'OCN'
     jul_id = 'JUL'
     orc_id = 'ORC'
+    # Dataset time limits (correct format):
+    dom_lim = get_settings4domains(user_params)
+    tim_lim = get_settings4ds_time_limits(user_params)
 
     # -- Get simular grids for research domain:
     grid4domain = []
@@ -385,14 +439,12 @@ def get_interpol(
         # -- Get simular datasets:
         act_ds = lst4data[i].sel(
             # -- Slice by latitudes:
-            lat  = slice(domain_lim.get(domain)[0],
-                         domain_lim.get(domain)[1]),
+            lat  = slice(dom_lim.get(domain)[0], dom_lim.get(domain)[1]),
             # -- Slice by longitudes:
-            lon  = slice(domain_lim.get(domain)[2],
-                         domain_lim.get(domain)[3]),
+            lon  = slice(dom_lim.get(domain)[2], dom_lim.get(domain)[3]),
             # -- Time slice
-            time = slice(f'{time_limits.get(var).get(ds_name)[0]}', 
-                         f'{time_limits.get(var).get(ds_name)[1]}')
+            time = slice(f'{tim_lim.get(var).get(ds_name)[0]}',
+                         f'{tim_lim.get(var).get(ds_name)[1]}')
         )
         # -- Define grid for interpolation (on this grid will be interpolation)
         if lst4dsnames[i][0:3] == ocn_id:
@@ -401,7 +453,7 @@ def get_interpol(
         if ((lst4dsnames[i] == 'JUL_S2Diag') and (var == 'burned_area')):
             act_ds = act_ds / 13.5
         # -- Add new data to the list:
-        grid4domain.append(act_ds) 
+        grid4domain.append(act_ds)
 
     # 2. Interpolation grids v, orc_id
     for i in range(len(lst4dsnames)):
@@ -413,11 +465,9 @@ def get_interpol(
 
                 res360_720 = lib4ups.get_upscaling_ba(grid4domain[i], var, lreport = False)
                 grid4domain[i] = res360_720.to_dataset(name = var)
-
-            # 2.2: Run interpolation to OCN grid (all parameters)
+            # 2.2: Run interpolation to OCN grid (all parameters) -> time ignore
             grid4domain[i] = grid4domain[i].interp_like(
-                inter2grid.drop_dims('time'), method = 'nearest' )              # interpolation with time ignore
-
+                inter2grid.drop_dims('time'), method = 'nearest')
             # 2.3: Add a new field with area information to current datasets
             grid4domain[i] = (
                 grid4domain[i].assign(
@@ -432,45 +482,49 @@ def get_interpol(
             )
     return grid4domain
 
-# 2.8 annual_mean --> Calculation of annual values for research parameters.
-#                     Values from this subrotine are used only for linear plots
-#                     which you can generate from fire_xarray.py and one_linear_plot.py
-def annual_mean(
-        # Input variables:
-        ds_data:list[xr.Dataset],      # Data from actual research datasets and the relevant names of datasets
-        var:str,                       # Research parameter(burned_area, gpp, npp and etc...)
-        # OUTPUT variables:
-    ) -> list[xr.Dataset]:             # Annual values of the research parameter
 
+def annual_mean(ds_data:list[xr.Dataset], var:str) -> list[xr.Dataset]:
+    """ Calculation of annual values for research parameters. Values from this
+        subrotine are used only for linear plots which you can generate from
+        fire_xarray.py and one_linear_plot.py
+
+        Input variables:
+
+        ds_data - Data from actual research datasets and the relevant names of datasets
+        var - Research parameter(burned_area, gpp, npp and etc...)
+
+        OUTPUT variables:
+
+        annual_values - Annual values of the research parameter
+     """
     # -- Get year sum or mean values: ds - actual dataset, method: mean or sum
     def agg(ds, method):
         if method == 'sum':
             return ds.sum(dim = {'lat', 'lon'}).groupby('time.year').sum()
         else:
             return ds.sum(dim = {'lat', 'lon'}).groupby('time.year').mean()
-
     # -- Define convertation coefficients:
     orig    = 1.0   # use original units
-    kgc2pgc = 1e-12 # kgC --> PgC     
+    no_area = 1.0   # cases when research parameters doesn't depend on area
+    kgc2pgc = 1e-12 # kgC --> PgC
     gc2pgc  = 1e-15 #  gC --> PgC
     set_rec_coef = {
-        'burned_area' : orig  , 'lai' : orig  , 'cVeg' : kgc2pgc, 'npp'   : gc2pgc,
-        'gpp'         : gc2pgc, 'nee' : gc2pgc, 'nbp'  : gc2pgc , 'fFire' : gc2pgc,
+        'burned_area' : orig,
+        'lai' : orig,
+        'cVeg' : kgc2pgc,
+        'npp' : gc2pgc,
+        'gpp' : gc2pgc,
+        'nee' : gc2pgc,
+        'nbp' : gc2pgc ,
+        'fFire' : gc2pgc,
     }
-
-    rec_coef = set_rec_coef.get(var)
-
-    # 2. Convert units into correct format: In case of: burned area - no changes
+    # -- Convert units into correct format: In case of: burned area - no changes
     # lai - values by area , cVeg --> from gC m-2 to PgC, other --> from kgC m-2 to PgC
     annual_values = []
     for act_ds in ds_data:
         # -- Define area - values
-        if var != 'burned_area':
-            area = act_ds['area']
-        else:
-            area = 1.0  
-        param = act_ds[var] * area * rec_coef
-
+        area = act_ds['area'] if var != 'burned_area' else no_area
+        param = act_ds[var] * area * set_rec_coef.get(var)
         # -- Define final values:
         if   var == 'cVeg':
             annual_values.append(agg(param, 'mean'))
@@ -481,25 +535,36 @@ def annual_mean(
             annual_values.append(agg(param, 'sum'))
     return annual_values
 
+
 if __name__ == '__main__':
     #=============================   User settings   ==========================
+    # -- Logical parameteres:
+    # -- Define logical settings (lcluster, lnc_info,station_mode, lvis_lines, lBasemap_moment:
+    lsets = logical_settings(lcluster = True)
+    # -- Get basic user settings for datasets:
+    bcc = config.Bulder_config_class()
+    tlm = bcc.user_settings()
+
     # -- Research dataset (s):
     ds_names = ['OCN_S2Prog_v3', 'ORC_S0']
     #ds_names = ['BA_MODIS', 'OCN_S2.1', 'JULES']
+
     # -- Research parameters:
-    ds_vars  = ['cVeg', 'cVeg']
+    ds_vars = ['cVeg', 'cVeg']
     #ds_vars  = ['burned_area', 'burnedArea']
+
     # -- Research var:
     var = 'cVeg'
     #var = 'burned_area'
-    # -- Research domain:
-    domain   = 'Global'
 
-# =============================    Main program   ===================
+    # -- Research domain:
+    domain = 'Global'
+
+    # =============================    Main program   ===================
     # -- Define input paths (MODIS and OCN):
-    dpin, dparam = get_path_in(ds_names, var)
+    dpin, dparam = get_path_in(ds_names, var, lsets)
     # -- Read data:
-    esa_data = get_data(dpin, ds_names , var, ds_vars)
+    esa_data = get_data(dpin, ds_names , var, ds_vars, tlm)
     # -- Run interpolation:
-    esa_ba   = get_interpol(esa_data, ds_names, domain, var)
-# =============================    End of program   =================
+    esa_ba = get_interpol(esa_data, ds_names, domain, var, tlm)
+    # =============================    End of program   =================
