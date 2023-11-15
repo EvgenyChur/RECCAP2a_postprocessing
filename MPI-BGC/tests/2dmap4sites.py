@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Task: Create basemap map with random stations location
+Task: Create basemap map with random stations location.
 
 This version is an initial version of the algorithm which was implemented into 
 one_point module. Nevertheless, we can you it for the similar tasks or use it
